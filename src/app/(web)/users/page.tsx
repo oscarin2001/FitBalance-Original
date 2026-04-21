@@ -1,0 +1,42 @@
+import { loadUsersPageState } from "@/actions/server/users/pages";
+import { DashboardView } from "@/components/users/dashboard";
+
+export const dynamic = "force-dynamic";
+
+function hasMeaningfulPlan(dashboard: Awaited<ReturnType<typeof loadUsersPageState>>["dashboard"]): boolean {
+  if (!dashboard) {
+    return false;
+  }
+
+  const hasMealNutrition = dashboard.meals.some(
+    (meal) =>
+      meal.totals.calories > 0 ||
+      meal.totals.proteins > 0 ||
+      meal.totals.carbs > 0 ||
+      meal.totals.fats > 0
+  );
+
+  return hasMealNutrition || dashboard.dayTotals.calories > 0 || dashboard.weekTotals.calories > 0;
+}
+
+export default async function UsersPage() {
+  const { sessionUser, dashboard, hasLoadError } = await loadUsersPageState();
+
+  if (hasLoadError) {
+    return (
+      <main className="mx-auto grid w-full max-w-md gap-4 p-4 pt-8">
+        <h1 className="text-2xl font-semibold">Dashboard</h1>
+        <p className="text-sm text-red-600">No se pudo consultar la base de datos.</p>
+      </main>
+    );
+  }
+
+  return (
+    <DashboardView
+      userName={sessionUser.nombre}
+      dashboard={dashboard}
+      isPlanPending={!hasMeaningfulPlan(dashboard)}
+    />
+  );
+}
+
