@@ -8,6 +8,7 @@ import {
   normalizeInstructionSteps,
 } from "@/components/users/dashboard/lib/meal-formatters";
 import { prisma } from "@/actions/server/users/prisma";
+import { formatRelativeDateLabel, getDateKeyDifference, shiftDateKey, toDateKey } from "@/lib/date-labels";
 import type {
   DashboardMacroTotals,
   UserDashboardMealIngredient,
@@ -23,18 +24,6 @@ function emptyTotals(): DashboardMacroTotals {
 
 function round(value: number): number {
   return Number(value.toFixed(1));
-}
-
-function toDateKey(value: Date): string {
-  return value.toISOString().slice(0, 10);
-}
-
-function formatDateLabel(dateKey: string): string {
-  return new Date(`${dateKey}T12:00:00.000Z`).toLocaleDateString("es-BO", {
-    weekday: "long",
-    month: "short",
-    day: "numeric",
-  });
 }
 
 function getCarbLabel(objective: Objetivo | null): string {
@@ -132,49 +121,56 @@ function buildIngredientNames(ingredients: UserDashboardMealIngredient[]) {
   return ingredients.map((ingredient) => ingredient.name);
 }
 
-function pickSelectedDate(dateKeys: string[], todayKey: string): string | null {
-  if (dateKeys.length === 0) {
+function normalizeDateKey(value: string | null | undefined): string | null {
+  if (!value || value.trim().length === 0) {
     return null;
   }
 
-  const today = dateKeys.find((key) => key === todayKey);
-  if (today) {
-    return today;
+  const trimmed = value.trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    return trimmed;
   }
 
-  const nextDate = dateKeys.find((key) => key > todayKey);
-  return nextDate ?? dateKeys[0];
+  const parsed = new Date(trimmed);
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+
+  return toDateKey(parsed);
 }
 
-function buildDashboardPlan(user: {
-  objetivo: Objetivo | null;
-  kcal_objetivo: number | null;
-  proteinas_g_obj: number | null;
-  grasas_g_obj: number | null;
-  carbohidratos_g_obj: number | null;
-  planes: Array<{
-    id: number;
-    fecha: Date;
-    comida_tipo: ComidaTipo;
-    receta: {
-      nombre: string;
-      instrucciones: string | null;
-      alimentos: Array<{
-        gramos: number;
-        alimento: {
-          nombre: string;
-          calorias: number | null;
-          proteinas: number | null;
-          carbohidratos: number | null;
-          grasas: number | null;
-          porcion: string | null;
-          categoria_enum: string | null;
-          categoria: string | null;
-        };
-      }>;
-    };
-  }>;
-}): UserDashboardPlan | null {
+function buildDashboardPlan(
+  user: {
+    objetivo: Objetivo | null;
+    kcal_objetivo: number | null;
+    proteinas_g_obj: number | null;
+    grasas_g_obj: number | null;
+    carbohidratos_g_obj: number | null;
+    planes: Array<{
+      id: number;
+      fecha: Date;
+      comida_tipo: ComidaTipo;
+      receta: {
+        nombre: string;
+        instrucciones: string | null;
+        alimentos: Array<{
+          gramos: number;
+          alimento: {
+            nombre: string;
+            calorias: number | null;
+            proteinas: number | null;
+            carbohidratos: number | null;
+            grasas: number | null;
+            porcion: string | null;
+            categoria_enum: string | null;
+            categoria: string | null;
+          };
+        }>;
+      };
+    }>;
+  },
+  requestedDateIso?: string | null
+): UserDashboardPlan | null {
   const mealsByDate = new Map<string, UserDashboardMeal[]>();
   const weekTotals = user.planes.reduce<DashboardMacroTotals>((acc, plan) => {
     const totals = buildMealTotals(plan.receta.alimentos);
@@ -206,35 +202,39 @@ function buildDashboardPlan(user: {
     return addTotals(acc, totals);
   }, emptyTotals());
 
-  const orderedDateKeys = [...mealsByDate.keys()].sort();
   const todayKey = toDateKey(new Date());
-  const selectedDateIso = pickSelectedDate(orderedDateKeys, todayKey);
+  const orderedDateKeys = [...mealsByDate.keys()].sort();
+  const firstDateKey = orderedDateKeys[0] ?? null;
+  const dateShiftDays = firstDateKey ? Math.max(getDateKeyDifference(firstDateKey, todayKey), 0) : 0;
+  const normalizedMealsByDate =
+    dateShiftDays > 0
+      ? new Map(
+          [...mealsByDate.entries()].map(([dateKey, meals]) => [shiftDateKey(dateKey, -dateShiftDays), meals] as const)
+        )
+      : mealsByDate;
+  const selectedDateIso = normalizeDateKey(requestedDateIso) ?? todayKey;
 
-  if (!selectedDateIso) {
-    return null;
-  }
-
-  const selectedMeals = (mealsByDate.get(selectedDateIso) ?? []).sort(
+  const selectedMeals = (normalizedMealsByDate.get(selectedDateIso) ?? []).sort(
     (a, b) => mealOrder.indexOf(a.mealType) - mealOrder.indexOf(b.mealType)
   );
   const dayTotals = selectedMeals.reduce<DashboardMacroTotals>(
     (acc, meal) => addTotals(acc, meal.totals),
     emptyTotals()
   );
-  const periodDays = orderedDateKeys.length;
   const dayTargets: DashboardMacroTotals = {
     calories: round(user.kcal_objetivo ?? 0),
     proteins: round(user.proteinas_g_obj ?? 0),
     carbs: round(user.carbohidratos_g_obj ?? 0),
     fats: round(user.grasas_g_obj ?? 0),
   };
+  const periodDays = [...normalizedMealsByDate.keys()].length;
 
   return {
     objective: user.objetivo,
     carbLabel: getCarbLabel(user.objetivo),
     selectedDateIso,
-    selectedDateLabel: formatDateLabel(selectedDateIso),
-    hasPlanForToday: mealsByDate.has(todayKey),
+    selectedDateLabel: formatRelativeDateLabel(selectedDateIso),
+    hasPlanForToday: normalizedMealsByDate.has(todayKey),
     periodDays,
     dayTotals,
     dayTargets,
@@ -315,7 +315,7 @@ export type UsersPageState = {
   hasLoadError: boolean;
 };
 
-export async function loadUsersPageState(): Promise<UsersPageState> {
+export async function loadUsersPageState(options?: { requestedDateIso?: string | null }): Promise<UsersPageState> {
   const sessionUser = await requireCompletedOnboarding();
   let dashboard: UserDashboardPlan | null = null;
   let hasLoadError = false;
@@ -324,12 +324,12 @@ export async function loadUsersPageState(): Promise<UsersPageState> {
     let user = await loadDashboardUser(sessionUser.userId);
 
     if (user) {
-      dashboard = buildDashboardPlan(user);
+      dashboard = buildDashboardPlan(user, options?.requestedDateIso ?? null);
 
       if (!hasMeaningfulPlan(dashboard) && user.planes.length > 0) {
         await syncSeedFoodsToDatabase();
         user = await loadDashboardUser(sessionUser.userId);
-        dashboard = user ? buildDashboardPlan(user) : null;
+        dashboard = user ? buildDashboardPlan(user, options?.requestedDateIso ?? null) : null;
       }
     }
   } catch (error) {

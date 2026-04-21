@@ -1,17 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import type { UserDashboardPlan } from "@/actions/server/users/types";
 
+import { BottomNavbar, type BottomNavbarTab } from "./bottom-navbar";
 import { DashboardSkeleton } from "./dashboard-skeleton";
-import { DashboardMacroGrid } from "./organisms/dashboard-macro-grid";
 import { DashboardSummaryCard } from "./organisms/dashboard-summary-card";
 import {
   DailyLogView,
   type DailyLogMeal,
   type DailyLogProfile,
 } from "./organisms/daily-log-view";
+import { TopHeader } from "./top-header";
 
 function resolveDailyLogProfile(objective: UserDashboardPlan["objective"]): DailyLogProfile {
   if (objective === "Bajar_grasa") {
@@ -23,6 +25,14 @@ function resolveDailyLogProfile(objective: UserDashboardPlan["objective"]): Dail
   }
 
   return "mantenimiento";
+}
+
+function resolveDashboardTab(value: string | null): BottomNavbarTab {
+  if (value === "metas" || value === "comidas" || value === "comunidad") {
+    return value;
+  }
+
+  return "registro";
 }
 
 function mapDashboardMeals(meals: UserDashboardPlan["meals"]): DailyLogMeal[] {
@@ -45,35 +55,101 @@ type DashboardViewProps = {
 };
 
 export function DashboardView({ userName, dashboard, isPlanPending }: DashboardViewProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const initialTab = useMemo(() => resolveDashboardTab(searchParams.get("tab")), [searchParams]);
   const [range, setRange] = useState<"today" | "week">("today");
+  const [activeTab, setActiveTab] = useState<BottomNavbarTab>(initialTab);
+
+  useEffect(() => {
+    setActiveTab(initialTab);
+  }, [initialTab]);
+
+  useEffect(() => {
+    if (isPlanPending || !dashboard) {
+      return;
+    }
+
+    const section = document.getElementById(activeTab);
+    if (!section) {
+      return;
+    }
+
+    section.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [activeTab, dashboard, isPlanPending]);
+
+  function handleTabChange(tab: BottomNavbarTab) {
+    setActiveTab(tab);
+
+    const section = document.getElementById(tab);
+    section?.scrollIntoView({ behavior: "smooth", block: "start" });
+
+    const nextParams = new URLSearchParams(searchParams.toString());
+    nextParams.set("tab", tab);
+    router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
+  }
+
+  function handleDateChange(dateIso: string) {
+    const nextParams = new URLSearchParams(searchParams.toString());
+    nextParams.set("date", dateIso);
+    router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
+  }
+
+  const bottomNavbar = (
+    <BottomNavbar
+      activeTab={activeTab}
+      onTabChange={handleTabChange}
+      onFabClick={() => router.push("/users/onboarding")}
+    />
+  );
 
   if (isPlanPending || !dashboard) {
-    return <DashboardSkeleton />;
+    return (
+      <>
+        <DashboardSkeleton />
+        {bottomNavbar}
+      </>
+    );
   }
 
   return (
-    <main className="relative min-h-svh overflow-hidden bg-slate-50">
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -left-14 top-12 size-56 rounded-full bg-cyan-200/30 blur-3xl" />
-        <div className="absolute right-0 top-1/3 size-64 rounded-full bg-teal-200/25 blur-3xl" />
-      </div>
+    <>
+      <TopHeader
+        userName={userName}
+        selectedDateIso={dashboard.selectedDateIso}
+        onDateChange={handleDateChange}
+      />
 
-      <div className="relative mx-auto grid w-full max-w-md gap-4 p-4 pb-10 pt-8">
-        <DashboardSummaryCard
-          userName={userName}
-          dashboard={dashboard}
-          range={range}
-          onRangeChange={setRange}
-        />
+      <main className="relative min-h-svh overflow-hidden bg-slate-50 pb-44 pt-24">
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute -left-14 top-12 size-56 rounded-full bg-cyan-200/30 blur-3xl" />
+          <div className="absolute right-0 top-1/3 size-64 rounded-full bg-teal-200/25 blur-3xl" />
+        </div>
 
-        <DashboardMacroGrid dashboard={dashboard} range={range} />
+        <div className="relative mx-auto grid w-full max-w-md gap-4 p-4 pb-10">
+          <section id="registro" className="scroll-mt-24">
+            <DashboardSummaryCard
+              userName={userName}
+              dashboard={dashboard}
+              range={range}
+              onRangeChange={setRange}
+            />
+          </section>
 
-        <DailyLogView
-          meals={mapDashboardMeals(dashboard.meals)}
-          dietProfile={resolveDailyLogProfile(dashboard.objective)}
-          targets={dashboard.dayTargets}
-        />
-      </div>
-    </main>
+          <section id="metas" className="scroll-mt-24" aria-hidden="true" />
+
+          <section id="comidas" className="scroll-mt-24">
+            <DailyLogView
+              meals={mapDashboardMeals(dashboard.meals)}
+              dietProfile={resolveDailyLogProfile(dashboard.objective)}
+              targets={dashboard.dayTargets}
+              showHeader={false}
+            />
+          </section>
+        </div>
+      </main>
+      {bottomNavbar}
+    </>
   );
 }

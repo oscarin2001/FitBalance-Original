@@ -1,6 +1,13 @@
 import { Prisma } from "@prisma/client";
 
 import { prisma } from "@/actions/server/users/prisma";
+import {
+  formatWeekdayLabel,
+  getDateKeyDifference,
+  parseDateKey,
+  shiftDateKey,
+  toDateKey,
+} from "@/lib/date-labels";
 
 import type {
   CreateUserInput,
@@ -89,6 +96,45 @@ function parseNutritionPlanDay(day: Record<string, unknown>): UserNutritionPlanD
   };
 }
 
+function normalizeNutritionPlanDays(days: UserNutritionPlanDay[]): UserNutritionPlanDay[] {
+  if (days.length === 0) {
+    return days;
+  }
+
+  const todayKey = toDateKey(new Date());
+  const dateKeys = days
+    .map((day) => {
+      const parsedDate = new Date(day.dateIso);
+      return Number.isNaN(parsedDate.getTime()) ? null : toDateKey(parsedDate);
+    })
+    .filter((dateKey): dateKey is string => Boolean(dateKey))
+    .sort();
+  const firstDateKey = dateKeys[0];
+
+  if (!firstDateKey) {
+    return days;
+  }
+
+  const shiftDays = Math.max(getDateKeyDifference(firstDateKey, todayKey), 0);
+
+  if (shiftDays === 0) {
+    return days;
+  }
+
+  return days.map((day) => {
+    const parsedDate = new Date(day.dateIso);
+    const currentDateKey = Number.isNaN(parsedDate.getTime()) ? todayKey : toDateKey(parsedDate);
+    const shiftedDateKey = shiftDateKey(currentDateKey, -shiftDays);
+    const shiftedDate = parseDateKey(shiftedDateKey);
+
+    return {
+      ...day,
+      dayLabel: formatWeekdayLabel(shiftedDate),
+      dateIso: shiftedDate.toISOString(),
+    };
+  });
+}
+
 function parseNutritionPlan(planAi: Prisma.JsonValue | null): UserNutritionPlan | null {
   if (!isRecord(planAi)) {
     return null;
@@ -133,7 +179,7 @@ function parseNutritionPlan(planAi: Prisma.JsonValue | null): UserNutritionPlan 
     dailyWaterLiters: getNumber(user.aguaLitrosDiarios) ?? 0,
     targetCalories: getNumber(user.caloriasObjetivoTotal) ?? 0,
     warning: getString(planAi.warning) || null,
-    days,
+    days: normalizeNutritionPlanDays(days),
   };
 }
 

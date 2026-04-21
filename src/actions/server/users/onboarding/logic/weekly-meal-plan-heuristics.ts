@@ -2,6 +2,7 @@ import { Objetivo, VelocidadCambio } from "@prisma/client";
 
 import { onboardingDays } from "../constants";
 import { buildFallbackMealInstructions } from "@/components/users/dashboard/lib/meal-formatters";
+import { formatWeekdayLabel, parseDateKey, toDateKey } from "@/lib/date-labels";
 import type {
   FoodPreferenceMap,
   GeneratedWeeklyMealPlan,
@@ -195,19 +196,14 @@ function buildExtraLabel(extraFoods: string[]) {
 }
 
 function buildPlanDates(): Array<{ dayLabel: string; dateIso: string }> {
-  const startDate = new Date();
-  const currentDay = startDate.getDay();
-  const daysUntilMonday = currentDay === 1 ? 0 : (8 - currentDay) % 7;
+  const startDate = parseDateKey(toDateKey(new Date()));
 
-  startDate.setDate(startDate.getDate() + daysUntilMonday);
-  startDate.setHours(12, 0, 0, 0);
-
-  return onboardingDays.map((dayLabel, index) => {
+  return onboardingDays.map((_, index) => {
     const date = new Date(startDate);
-    date.setDate(startDate.getDate() + index);
+    date.setUTCDate(startDate.getUTCDate() + index);
 
     return {
-      dayLabel,
+      dayLabel: formatWeekdayLabel(date),
       dateIso: date.toISOString(),
     };
   });

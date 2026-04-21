@@ -58,6 +58,7 @@ export type DailyLogViewProps = {
   targets?: Partial<DailyLogTotals>
   title?: string
   subtitle?: string
+  showHeader?: boolean
   className?: string
   onAddMeal?: (meal: DailyLogMeal) => void
   onAdvanced?: (meal: DailyLogMeal) => void
@@ -481,6 +482,7 @@ export function DailyLogView({
   targets,
   title = "Registro Diario",
   subtitle = "Revisa las comidas del dia con cantidades, tiempos y lectura rapida de tu dieta.",
+  showHeader = true,
   className,
   onAddMeal,
   onAdvanced,
@@ -492,27 +494,30 @@ export function DailyLogView({
   return (
     <section
       className={cn(
-        "mx-auto flex w-full max-w-md flex-col gap-4 px-4 py-4 scroll-smooth sm:max-w-lg",
+        "mx-auto flex w-full max-w-md flex-col px-4 py-4 scroll-smooth sm:max-w-lg",
+        showHeader ? "gap-4" : "gap-3",
         className
       )}
       style={themeVariables}
     >
-      <header className="flex items-start justify-between gap-3">
-        <div className="space-y-1">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-muted-foreground">
-            Registro diario
-          </p>
-          <h2 className="text-2xl font-semibold tracking-tight text-slate-950">{title}</h2>
-          <p className="max-w-[22rem] text-sm leading-6 text-muted-foreground">{subtitle}</p>
-        </div>
+      {showHeader ? (
+        <header className="flex items-start justify-between gap-3">
+          <div className="space-y-1">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-muted-foreground">
+              Registro diario
+            </p>
+            <h2 className="text-2xl font-semibold tracking-tight text-slate-950">{title}</h2>
+            <p className="max-w-[22rem] text-sm leading-6 text-muted-foreground">{subtitle}</p>
+          </div>
 
-        <Badge
-          variant="outline"
-          className="rounded-full border-[rgb(var(--dailylog-accent)/0.2)] bg-[rgb(var(--dailylog-soft)/0.55)] text-[rgb(var(--dailylog-accent))]"
-        >
-          {profileLabel}
-        </Badge>
-      </header>
+          <Badge
+            variant="outline"
+            className="rounded-full border-[rgb(var(--dailylog-accent)/0.2)] bg-[rgb(var(--dailylog-soft)/0.55)] text-[rgb(var(--dailylog-accent))]"
+          >
+            {profileLabel}
+          </Badge>
+        </header>
+      ) : null}
 
       {meals.length > 0 ? (
         <div className="grid gap-4">

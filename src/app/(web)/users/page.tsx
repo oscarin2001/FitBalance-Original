@@ -3,6 +3,10 @@ import { DashboardView } from "@/components/users/dashboard";
 
 export const dynamic = "force-dynamic";
 
+type UsersPageProps = {
+  searchParams: Promise<{ date?: string; tab?: string }>;
+};
+
 function hasMeaningfulPlan(dashboard: Awaited<ReturnType<typeof loadUsersPageState>>["dashboard"]): boolean {
   if (!dashboard) {
     return false;
@@ -19,8 +23,9 @@ function hasMeaningfulPlan(dashboard: Awaited<ReturnType<typeof loadUsersPageSta
   return hasMealNutrition || dashboard.dayTotals.calories > 0 || dashboard.weekTotals.calories > 0;
 }
 
-export default async function UsersPage() {
-  const { sessionUser, dashboard, hasLoadError } = await loadUsersPageState();
+export default async function UsersPage({ searchParams }: UsersPageProps) {
+  const { date } = await searchParams;
+  const { sessionUser, dashboard, hasLoadError } = await loadUsersPageState({ requestedDateIso: date });
 
   if (hasLoadError) {
     return (
