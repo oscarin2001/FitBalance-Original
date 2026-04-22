@@ -4,9 +4,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import type { UserDashboardPlan } from "@/actions/server/users/types";
+import type { UserDashboardProfile } from "@/actions/server/users/types";
 
 import { BottomNavbar, type BottomNavbarTab } from "./bottom-navbar";
 import { DashboardSkeleton } from "./dashboard-skeleton";
+import { DashboardSettingsSidebar } from "./organisms/dashboard-settings-sidebar";
 import { DashboardSummaryCard } from "./organisms/dashboard-summary-card";
 import {
   DailyLogView,
@@ -15,6 +17,7 @@ import {
 } from "./organisms/daily-log-view";
 import { TopHeader } from "./top-header";
 import { downloadNutritionPlanPdf } from "./settings/pdf";
+import { SidebarProvider } from "@/components/ui/sidebar";
 
 function resolveDailyLogProfile(objective: UserDashboardPlan["objective"]): DailyLogProfile {
   if (objective === "Bajar_grasa") {
@@ -40,6 +43,7 @@ function mapDashboardMeals(meals: UserDashboardPlan["meals"]): DailyLogMeal[] {
   return meals.map((meal) => ({
     id: meal.id,
     title: meal.mealType,
+    recipeName: meal.recipeName,
     ingredients: meal.ingredients.map((ingredient, index) => ({
       id: `${meal.id}-${index}`,
       name: ingredient.name,
@@ -51,11 +55,12 @@ function mapDashboardMeals(meals: UserDashboardPlan["meals"]): DailyLogMeal[] {
 
 type DashboardViewProps = {
   userName: string;
+  profile: UserDashboardProfile | null;
   dashboard: UserDashboardPlan | null;
   isPlanPending: boolean;
 };
 
-export function DashboardView({ userName, dashboard, isPlanPending }: DashboardViewProps) {
+export function DashboardView({ userName, profile, dashboard, isPlanPending }: DashboardViewProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -160,42 +165,45 @@ export function DashboardView({ userName, dashboard, isPlanPending }: DashboardV
   }
 
   return (
-    <>
-      <TopHeader
-        userName={userName}
-        selectedDateIso={dashboard.selectedDateIso}
-        onDateChange={handleDateChange}
-      />
+    <SidebarProvider defaultOpen={false}>
+      <DashboardSettingsSidebar profile={profile} />
+      <div className="flex min-w-0 flex-1 flex-col">
+        <TopHeader
+          userName={userName}
+          selectedDateIso={dashboard.selectedDateIso}
+          onDateChange={handleDateChange}
+        />
 
-      <main className="relative min-h-svh overflow-hidden bg-slate-50 pb-44 pt-24">
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute -left-14 top-12 size-56 rounded-full bg-cyan-200/30 blur-3xl" />
-          <div className="absolute right-0 top-1/3 size-64 rounded-full bg-teal-200/25 blur-3xl" />
-        </div>
+        <main className="relative min-h-svh overflow-hidden bg-slate-50 pb-44 pt-24">
+          <div className="pointer-events-none absolute inset-0">
+            <div className="absolute -left-14 top-12 size-56 rounded-full bg-cyan-200/30 blur-3xl" />
+            <div className="absolute right-0 top-1/3 size-64 rounded-full bg-teal-200/25 blur-3xl" />
+          </div>
 
-        <div className="relative mx-auto grid w-full max-w-md gap-4 p-4 pb-10">
-          <section id="registro" className="scroll-mt-24">
-            <DashboardSummaryCard
-              userName={userName}
-              dashboard={dashboard}
-              range={range}
-              onRangeChange={setRange}
-            />
-          </section>
+          <div className="relative mx-auto grid w-full max-w-md gap-4 p-4 pb-10">
+            <section id="registro" className="scroll-mt-24">
+              <DashboardSummaryCard
+                userName={userName}
+                dashboard={dashboard}
+                range={range}
+                onRangeChange={setRange}
+              />
+            </section>
 
-          <section id="metas" className="scroll-mt-24" aria-hidden="true" />
+            <section id="metas" className="scroll-mt-24" aria-hidden="true" />
 
-          <section id="comidas" className="scroll-mt-24">
-            <DailyLogView
-              meals={mapDashboardMeals(dashboard.meals)}
-              dietProfile={resolveDailyLogProfile(dashboard.objective)}
-              targets={dashboard.dayTargets}
-              showHeader={false}
-            />
-          </section>
-        </div>
-      </main>
-      {bottomNavbar}
-    </>
+            <section id="comidas" className="scroll-mt-24">
+              <DailyLogView
+                meals={mapDashboardMeals(dashboard.meals)}
+                dietProfile={resolveDailyLogProfile(dashboard.objective)}
+                targets={dashboard.dayTargets}
+                showHeader={false}
+              />
+            </section>
+          </div>
+        </main>
+        {bottomNavbar}
+      </div>
+    </SidebarProvider>
   );
 }

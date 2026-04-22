@@ -25,7 +25,7 @@ function hasMeaningfulPlan(dashboard: Awaited<ReturnType<typeof loadUsersPageSta
 
 export default async function UsersPage({ searchParams }: UsersPageProps) {
   const { date } = await searchParams;
-  const { sessionUser, dashboard, hasLoadError } = await loadUsersPageState({ requestedDateIso: date });
+  const { sessionUser, profile, dashboard, hasLoadError } = await loadUsersPageState({ requestedDateIso: date });
 
   if (hasLoadError) {
     return (
@@ -38,7 +38,8 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
 
   return (
     <DashboardView
-      userName={sessionUser.nombre}
+      userName={profile?.nombre ?? sessionUser.nombre}
+      profile={profile}
       dashboard={dashboard}
       isPlanPending={!hasMeaningfulPlan(dashboard)}
     />

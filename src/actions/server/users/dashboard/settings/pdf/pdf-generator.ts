@@ -41,6 +41,11 @@ function formatLiters(value: number) {
   return `${value.toFixed(2)} L`;
 }
 
+function formatPercentBar(value: number) {
+  const filled = Math.max(0, Math.min(10, Math.round(value / 10)));
+  return `[${"#".repeat(filled)}${"-".repeat(10 - filled)}]`;
+}
+
 function unique(values: string[]) {
   return [...new Set(values.map((value) => value.trim()).filter(Boolean))];
 }
@@ -70,46 +75,59 @@ function getDayTotals(meals: PdfMeal[]): PdfMacroTotals | null {
   );
 }
 
-function getObjectiveRecommendations(summary: NutritionPdfSummary) {
+function getObjectiveHeadline(summary: NutritionPdfSummary) {
   if (summary.objetivo === Objetivo.Bajar_grasa) {
-    return [
-      "Evita el azúcar añadido y las bebidas azucaradas.",
-      "No abuses de los carbohidratos en los días de déficit.",
-      "Prioriza proteína magra, verduras y agua suficiente.",
-    ];
+    return "Este plan busca perder grasa manteniendo masa muscular.";
   }
 
   if (summary.objetivo === Objetivo.Ganar_musculo) {
-    return [
-      "Reparte la proteína en todas las comidas.",
-      "Usa carbohidratos alrededor del entrenamiento.",
-      "Mantén las porciones constantes y no saltes comidas.",
-    ];
+    return "Este plan busca ganar masa con un superavit controlado.";
   }
 
+  return "Este plan busca mantener el peso con energia estable.";
+}
+
+function getPracticalRules(summary: NutritionPdfSummary) {
+  const rules = [
+    "Si en 2 semanas no ves cambios, ajusta 100-200 kcal.",
+    "Si tienes hambre, sube verduras y una porcion de proteina.",
+    "Si tienes poca energia, revisa sueno y agua antes de bajar mas calorias.",
+  ];
+
+  if (summary.objetivo === Objetivo.Bajar_grasa) {
+    rules.unshift("Evita azucar añadido y exceso de carbohidratos en deficit.");
+  }
+
+  if (summary.objetivo === Objetivo.Ganar_musculo) {
+    rules.unshift("Reparte la proteina en todas las comidas para apoyar el musculo.");
+  }
+
+  return rules;
+}
+
+function getSwapSuggestions() {
   return [
-    "Mantén porciones estables y prioriza comidas completas.",
-    "Cuida tu hidratación y no recortes comidas sin necesidad.",
-    "Ajusta el plan solo si tu energía o peso cambian de forma sostenida.",
+    "Proteina: pechuga de pollo cocida, huevo cocido, pescado blanco cocido.",
+    "Carbos: arroz basmati cocido, avena cocida, papa cocida, quinua cocida.",
+    "Extras: queso fresco, yogur griego natural, pan integral.",
   ];
 }
 
 function getObjectiveWarnings(summary: NutritionPdfSummary) {
-  const baseWarnings = summary.correcciones ?? [];
+  const warnings = [
+    "No hace falta contar cada detalle; concentra tu seguimiento en calorias y peso.",
+    "Si la energia cae mucho, sube volumen de comida o revisa el deficit.",
+  ];
 
   if (summary.objetivo === Objetivo.Bajar_grasa) {
-    baseWarnings.push("Si bajas de peso, no recortes carbohidratos de forma agresiva.");
-  }
-
-  if (summary.objetivo === Objetivo.Ganar_musculo) {
-    baseWarnings.push("Evita comer muy poco, porque puede frenar el progreso.");
+    warnings.push("No recortes carbohidratos de forma extrema si ya estas en deficit.");
   }
 
   if (summary.aguaLitrosDiarios < 2) {
-    baseWarnings.push("La hidratación calculada es baja; revisa tu peso y actividad.");
+    warnings.push("Tu agua calculada es baja; revisa peso y actividad.");
   }
 
-  return unique([...(summary.advertencias ?? []), ...baseWarnings]);
+  return unique(warnings);
 }
 
 function buildWeeklyPlanLines(weeklyPlan: BuildNutritionPdfPayloadInput["weeklyPlan"], summary: NutritionPdfSummary) {
@@ -126,8 +144,7 @@ function buildWeeklyPlanLines(weeklyPlan: BuildNutritionPdfPayloadInput["weeklyP
 
     return [
       `### ${typedDay.dayLabel}`,
-      `Fecha: ${typedDay.dateIso.slice(0, 10)}`,
-      `Meta diaria: ${Math.round(dayTotals.calories)} kcal | Proteínas ${Math.round(dayTotals.proteins)} g | Grasas ${Math.round(dayTotals.fats)} g | Carbohidratos ${Math.round(dayTotals.carbs)} g`,
+      `Total diario: ${Math.round(dayTotals.calories)} kcal | Proteinas ${Math.round(dayTotals.proteins)} g | Grasas ${Math.round(dayTotals.fats)} g | Carbohidratos ${Math.round(dayTotals.carbs)} g`,
       ...typedDay.meals.flatMap((meal) => [
         `- ${meal.mealType}: ${meal.recipeName}`,
         `  Alimentos: ${meal.foods.map(getFoodName).join(", ")}`,
@@ -139,7 +156,7 @@ function buildWeeklyPlanLines(weeklyPlan: BuildNutritionPdfPayloadInput["weeklyP
 
 export function buildNutritionPdfPayload(input: BuildNutritionPdfPayloadInput) {
   const generatedAt = new Date().toISOString();
-  const recommendations = unique([...(input.summary.recomendaciones ?? []), ...getObjectiveRecommendations(input.summary)]);
+  const recommendations = unique([getObjectiveHeadline(input.summary), ...(input.summary.recomendaciones ?? []), ...getPracticalRules(input.summary)]);
   const warnings = getObjectiveWarnings(input.summary);
   const weeklyPlan = input.weeklyPlan.map((day) => {
     const typedDay = day as { dayLabel: string; dateIso: string; meals: PdfMeal[] };
@@ -168,35 +185,20 @@ export function buildNutritionPdfPayload(input: BuildNutritionPdfPayloadInput) {
     `Generado: ${generatedAt}`,
     `Usuario: ${input.userName}`,
     "",
-    "## Resumen general",
+    "## Resumen rapido",
     `- Objetivo: ${formatLabel(input.summary.objetivo)}`,
-    `- Peso inicial: ${input.summary.pesoKg.toFixed(1)} kg`,
-    `- Peso objetivo: ${input.summary.pesoObjetivoKg.toFixed(1)} kg`,
-    `- IMC: ${input.summary.imc?.toFixed(1) ?? "Pendiente"}`,
-    `- Sexo: ${input.summary.sexo}`,
-    `- Edad: ${input.summary.edad} años`,
-    `- Altura: ${input.summary.alturaCm.toFixed(0)} cm`,
-    `- Nivel de actividad: ${formatLabel(input.summary.nivelActividad)}`,
-    `- Tipo de entrenamiento: ${formatLabel(input.summary.tipoEntrenamiento ?? "Sin definir")}`,
-    `- Nivel de experiencia: ${formatLabel(input.summary.nivelExperiencia ?? "Sin definir")}`,
-    `- Frecuencia: ${input.summary.frecuenciaEntreno ?? 0} días por semana`,
-    `- Años entrenando: ${input.summary.anosEntrenando ?? 0}`,
-    `- Fórmula usada: ${input.summary.formulaName}`,
-    `- TMB: ${Math.round(input.summary.tmbKcal)} kcal`,
-    `- Gasto total: ${Math.round(input.summary.gastoTotalKcal)} kcal`,
-    `- Movimiento diario: ${input.summary.walkingFactor.toFixed(2)}x`,
-    `- Entrenamiento: ${input.summary.trainingFactor.toFixed(2)}x`,
-    `- Ajuste calórico: ${input.summary.ajusteCaloricoKcal >= 0 ? "+" : ""}${Math.round(input.summary.ajusteCaloricoKcal)} kcal/día (${input.summary.ajusteCaloricoPct.toFixed(1)}%)`,
-    `- Proteínas: ${Math.round(input.summary.proteinasG)} g (${input.summary.proteinasPct.toFixed(1)}%)`,
-    `- Grasas: ${Math.round(input.summary.grasasG)} g (${input.summary.grasasPct.toFixed(1)}%)`,
-    `- Carbohidratos: ${Math.round(input.summary.carbohidratosG)} g (${input.summary.carbohidratosPct.toFixed(1)}%)`,
-    `- Agua base: ${formatLiters(input.summary.aguaBaseLitros)}`,
-    `- Agua extra del programa: ${formatLiters(input.summary.aguaExtraLitros)}`,
-    `- Agua calculada: ${formatLiters(input.summary.aguaLitrosDiarios)} al día`,
-    `- Cambio estimado: ${formatSignedKg(input.summary.variacionPesoSemanalKg)} por semana / ${formatSignedKg(input.summary.variacionPesoMensualKg)} por mes`,
+    `- Calorias diarias: ${Math.round(input.summary.caloriasObjetivoTotal)} kcal`,
+    `- Cambio esperado: ${formatSignedKg(input.summary.variacionPesoSemanalKg)} por semana / ${formatSignedKg(input.summary.variacionPesoMensualKg)} por mes`,
+    `- Proteinas ${formatPercentBar(input.summary.proteinasPct)} ${Math.round(input.summary.proteinasG)} g`,
+    `- Grasas ${formatPercentBar(input.summary.grasasPct)} ${Math.round(input.summary.grasasG)} g`,
+    `- Carbohidratos ${formatPercentBar(input.summary.carbohidratosPct)} ${Math.round(input.summary.carbohidratosG)} g`,
+    `- Agua calculada: ${formatLiters(input.summary.aguaLitrosDiarios)} por dia`,
     "",
-    "## Recomendaciones",
+    "## Que significa",
     ...recommendations.map((item) => `- ${item}`),
+    "",
+    "## Intercambios utiles",
+    ...getSwapSuggestions().map((item) => `- ${item}`),
     "",
     "## Advertencias",
     ...warnings.map((item) => `- ${item}`),

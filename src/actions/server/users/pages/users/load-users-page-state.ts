@@ -11,6 +11,7 @@ import { prisma } from "@/actions/server/users/prisma";
 import { formatRelativeDateLabel, getDateKeyDifference, shiftDateKey, toDateKey } from "@/lib/date-labels";
 import type {
   DashboardMacroTotals,
+  UserDashboardProfile,
   UserDashboardMealIngredient,
   UserDashboardMeal,
   UserDashboardPlan,
@@ -141,6 +142,11 @@ function normalizeDateKey(value: string | null | undefined): string | null {
 
 function buildDashboardPlan(
   user: {
+    nombre: string;
+    apellido: string;
+    fecha_nacimiento: Date;
+    sexo: string;
+    altura_cm: number | null;
     objetivo: Objetivo | null;
     kcal_objetivo: number | null;
     proteinas_g_obj: number | null;
@@ -249,6 +255,30 @@ function buildDashboardPlan(
   };
 }
 
+function buildDashboardProfile(user: {
+  nombre: string;
+  apellido: string;
+  fecha_nacimiento: Date;
+  sexo: string;
+  altura_cm: number | null;
+  peso_kg: number | null;
+  tipo_entrenamiento: string | null;
+  frecuencia_entreno: number | null;
+  anos_entrenando: number | null;
+}): UserDashboardProfile {
+  return {
+    nombre: user.nombre,
+    apellido: user.apellido,
+    birthDateIso: user.fecha_nacimiento.toISOString(),
+    sexo: user.sexo,
+    alturaCm: user.altura_cm,
+    pesoKg: user.peso_kg,
+    tipoEntrenamiento: user.tipo_entrenamiento,
+    frecuenciaEntreno: user.frecuencia_entreno,
+    anosEntrenando: user.anos_entrenando,
+  };
+}
+
 function hasMeaningfulPlan(dashboard: UserDashboardPlan | null): boolean {
   if (!dashboard) {
     return false;
@@ -269,6 +299,15 @@ async function loadDashboardUser(userId: number) {
   return prisma.usuario.findUnique({
     where: { id: userId },
     select: {
+      nombre: true,
+      apellido: true,
+      fecha_nacimiento: true,
+      sexo: true,
+      altura_cm: true,
+      peso_kg: true,
+      tipo_entrenamiento: true,
+      frecuencia_entreno: true,
+      anos_entrenando: true,
       objetivo: true,
       kcal_objetivo: true,
       proteinas_g_obj: true,
@@ -311,12 +350,14 @@ async function loadDashboardUser(userId: number) {
 
 export type UsersPageState = {
   sessionUser: SessionAppUser;
+  profile: UserDashboardProfile | null;
   dashboard: UserDashboardPlan | null;
   hasLoadError: boolean;
 };
 
 export async function loadUsersPageState(options?: { requestedDateIso?: string | null }): Promise<UsersPageState> {
   const sessionUser = await requireCompletedOnboarding();
+  let profile: UserDashboardProfile | null = null;
   let dashboard: UserDashboardPlan | null = null;
   let hasLoadError = false;
 
@@ -324,11 +365,13 @@ export async function loadUsersPageState(options?: { requestedDateIso?: string |
     let user = await loadDashboardUser(sessionUser.userId);
 
     if (user) {
+      profile = buildDashboardProfile(user);
       dashboard = buildDashboardPlan(user, options?.requestedDateIso ?? null);
 
       if (!hasMeaningfulPlan(dashboard) && user.planes.length > 0) {
         await syncSeedFoodsToDatabase();
         user = await loadDashboardUser(sessionUser.userId);
+        profile = user ? buildDashboardProfile(user) : profile;
         dashboard = user ? buildDashboardPlan(user, options?.requestedDateIso ?? null) : null;
       }
     }
@@ -337,6 +380,6 @@ export async function loadUsersPageState(options?: { requestedDateIso?: string |
     hasLoadError = true;
   }
 
-  return { sessionUser, dashboard, hasLoadError };
+  return { sessionUser, profile, dashboard, hasLoadError };
 }
 

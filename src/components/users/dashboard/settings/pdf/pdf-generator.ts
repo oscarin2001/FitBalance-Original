@@ -9,6 +9,8 @@ type PdfLine = {
   size: number;
   indent: number;
   color: [number, number, number];
+  background?: [number, number, number];
+  accent?: [number, number, number];
   spacer?: boolean;
 };
 
@@ -18,12 +20,25 @@ const LEFT_MARGIN = 54;
 const TOP_START = 716;
 const BOTTOM_MARGIN = 52;
 
-function escapePdfText(value: string) {
-  return value.replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
+function formatPdfColor([red, green, blue]: [number, number, number]) {
+  return `${(red / 255).toFixed(3)} ${(green / 255).toFixed(3)} ${(blue / 255).toFixed(3)} rg`;
 }
 
-function encodePdfString(value: string) {
-  return Array.from(value, (character) => String.fromCharCode(character.charCodeAt(0) & 0xff)).join("");
+function isSummaryMetricLine(line: string) {
+  return /^- (Objetivo|Calorias diarias|Cambio esperado|Proteinas|Grasas|Carbohidratos|Agua calculada)/.test(line);
+}
+
+function normalizePdfText(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/ñ/g, "n")
+    .replace(/Ñ/g, "N")
+    .replace(/[^\x20-\x7E]/g, "");
+}
+
+function escapePdfText(value: string) {
+  return value.replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
 }
 
 function wrapText(value: string, maxLength: number) {
@@ -49,12 +64,14 @@ function wrapText(value: string, maxLength: number) {
 }
 
 function buildLineEntries(rawLine: string): PdfLine[] {
-  if (!rawLine.trim()) {
+  const line = normalizePdfText(rawLine);
+
+  if (!line.trim()) {
     return [{ text: "", font: "regular", size: 1, indent: 0, color: [0, 0, 0], spacer: true }];
   }
 
-  if (rawLine.startsWith("FITBALANCE - Plan nutricional")) {
-    return wrapText(rawLine, 40).map((text) => ({
+  if (line.startsWith("FITBALANCE - Plan nutricional")) {
+    return wrapText(line, 40).map((text) => ({
       text,
       font: "bold",
       size: 18,
@@ -63,28 +80,55 @@ function buildLineEntries(rawLine: string): PdfLine[] {
     }));
   }
 
-  if (rawLine.startsWith("## ")) {
-    return wrapText(rawLine.slice(3), 48).map((text) => ({
+  if (line.startsWith("## ")) {
+    return wrapText(line.slice(3), 48).map((text) => ({
       text,
       font: "bold",
       size: 13,
       indent: 0,
+      background: [236, 253, 245],
+      accent: [13, 148, 136],
       color: [15, 118, 110],
     }));
   }
 
-  if (rawLine.startsWith("### ")) {
-    return wrapText(rawLine.slice(4), 54).map((text) => ({
+  if (line.startsWith("### ")) {
+    return wrapText(line.slice(4), 54).map((text) => ({
       text,
       font: "bold",
       size: 11.5,
       indent: 0,
-      color: [15, 118, 110],
+      background: [15, 118, 110],
+      color: [255, 255, 255],
     }));
   }
 
-  if (rawLine.startsWith("- ")) {
-    const wrapped = wrapText(rawLine.slice(2), 82);
+  if (isSummaryMetricLine(line)) {
+    return wrapText(line, 78).map((text) => ({
+      text,
+      font: "regular",
+      size: 11,
+      indent: 8,
+      background: [240, 253, 250],
+      accent: [13, 148, 136],
+      color: [15, 23, 42],
+    }));
+  }
+
+  if (line.startsWith("Total diario:")) {
+    return wrapText(line, 80).map((text) => ({
+      text,
+      font: "bold",
+      size: 10.8,
+      indent: 8,
+      background: [239, 246, 255],
+      accent: [37, 99, 235],
+      color: [29, 78, 216],
+    }));
+  }
+
+  if (line.startsWith("- ")) {
+    const wrapped = wrapText(line.slice(2), 82);
 
     return wrapped.map((text, index) => ({
       text: index === 0 ? `- ${text}` : text,
@@ -95,8 +139,8 @@ function buildLineEntries(rawLine: string): PdfLine[] {
     }));
   }
 
-  if (rawLine.startsWith("  ")) {
-    return wrapText(rawLine.trim(), 82).map((text) => ({
+  if (line.startsWith("  ")) {
+    return wrapText(line.trim(), 82).map((text) => ({
       text,
       font: "regular",
       size: 10.6,
@@ -105,7 +149,7 @@ function buildLineEntries(rawLine: string): PdfLine[] {
     }));
   }
 
-  return wrapText(rawLine, 88).map((text) => ({
+  return wrapText(line, 88).map((text) => ({
     text,
     font: "regular",
     size: 11,
@@ -142,11 +186,11 @@ function buildContentStream(pageLines: PdfLine[], pageNumber: number, pageCount:
   const commands: string[] = [
     "q",
     "0.07 0.47 0.44 rg",
-    `0 ${PAGE_HEIGHT - 56} ${PAGE_WIDTH} 56 re f`,
+    `0 ${PAGE_HEIGHT - 64} ${PAGE_WIDTH} 64 re f`,
     "1 1 1 rg",
-    `BT /F2 20 Tf ${LEFT_MARGIN} ${PAGE_HEIGHT - 36} Td (${escapePdfText("FITBALANCE")}) Tj ET`,
-    `BT /F1 9 Tf ${LEFT_MARGIN} ${PAGE_HEIGHT - 50} Td (${escapePdfText(`Plan nutricional para ${userName}`)}) Tj ET`,
-    "0.06 0.09 0.19 rg",
+    `BT /F2 20 Tf ${LEFT_MARGIN} ${PAGE_HEIGHT - 36} Td (${escapePdfText(normalizePdfText("FITBALANCE"))}) Tj ET`,
+    `BT /F1 9 Tf ${LEFT_MARGIN} ${PAGE_HEIGHT - 50} Td (${escapePdfText(normalizePdfText(`Plan nutricional para ${userName}`))}) Tj ET`,
+    `BT /F1 8 Tf ${LEFT_MARGIN} ${PAGE_HEIGHT - 60} Td (${escapePdfText(normalizePdfText("Resumen claro de calorias, macros y comidas"))}) Tj ET`,
   ];
 
   let y = TOP_START;
@@ -157,14 +201,31 @@ function buildContentStream(pageLines: PdfLine[], pageNumber: number, pageCount:
       continue;
     }
 
+    const lineHeight = Math.max(line.size + 4, 13);
+
+    if (line.background) {
+      const backgroundX = LEFT_MARGIN - 8;
+      const backgroundY = y - 4;
+      const backgroundWidth = PAGE_WIDTH - (LEFT_MARGIN - 8) * 2;
+
+      if (line.accent) {
+        commands.push(formatPdfColor(line.accent));
+        commands.push(`${backgroundX} ${backgroundY} 4 ${lineHeight} re f`);
+      }
+
+      commands.push(formatPdfColor(line.background));
+      commands.push(`${backgroundX + 4} ${backgroundY} ${backgroundWidth - 4} ${lineHeight} re f`);
+    }
+
+    commands.push(formatPdfColor(line.color));
     commands.push(
-      `BT /${line.font === "bold" ? "F2" : "F1"} ${line.size} Tf ${LEFT_MARGIN + line.indent} ${y} Td (${encodePdfString(escapePdfText(line.text))}) Tj ET`
+      `BT /${line.font === "bold" ? "F2" : "F1"} ${line.size} Tf ${LEFT_MARGIN + line.indent} ${y} Td (${escapePdfText(normalizePdfText(line.text))}) Tj ET`
     );
     y -= Math.max(line.size + 4, 13);
   }
 
   commands.push(
-    `BT /F1 9 Tf ${LEFT_MARGIN} 28 Td (${escapePdfText(`Página ${pageNumber} de ${pageCount}`)}) Tj ET`,
+    `BT /F1 9 Tf ${LEFT_MARGIN} 28 Td (${escapePdfText(normalizePdfText(`Pagina ${pageNumber} de ${pageCount}`))}) Tj ET`,
     "Q"
   );
 

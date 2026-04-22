@@ -120,3 +120,15 @@ export type UserDashboardPlan = {
   weekTargets: DashboardMacroTotals;
   meals: UserDashboardMeal[];
 };
+
+export type UserDashboardProfile = {
+  nombre: string;
+  apellido: string;
+  birthDateIso: string;
+  sexo: string;
+  alturaCm: number | null;
+  pesoKg: number | null;
+  tipoEntrenamiento: string | null;
+  frecuenciaEntreno: number | null;
+  anosEntrenando: number | null;
+};

@@ -47,6 +47,7 @@ export type DailyLogIngredient = {
 export type DailyLogMeal = {
   id: string | number
   title: string
+  recipeName?: string
   ingredients: DailyLogIngredient[]
   targets?: Partial<DailyLogTotals>
   summaryLabel?: string
@@ -537,6 +538,9 @@ export function DailyLogView({
                       <CardTitle className="text-lg font-semibold text-slate-950">
                         {meal.title}
                       </CardTitle>
+                      {meal.recipeName ? (
+                        <p className="text-sm font-medium text-slate-700">{meal.recipeName}</p>
+                      ) : null}
                       <p className="text-sm leading-6 text-muted-foreground">{summaryLabel}</p>
                     </div>
 

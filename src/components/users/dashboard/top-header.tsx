@@ -6,6 +6,7 @@ import { Crown, ChevronLeft, ChevronRight, Settings2 } from "lucide-react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { useSidebar } from "@/components/ui/sidebar";
 import {
   Dialog,
   DialogContent,
@@ -41,6 +42,7 @@ function getInitials(name: string) {
 
 export function TopHeader({ userName, selectedDateIso, onDateChange, className }: TopHeaderProps) {
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const { toggleSidebar } = useSidebar();
   const selectedDate = useMemo(() => parseDateKey(selectedDateIso), [selectedDateIso]);
   const initials = useMemo(() => getInitials(userName), [userName]);
   const dateLabel = useMemo(() => formatRelativeDateLabel(selectedDateIso), [selectedDateIso]);
@@ -55,7 +57,12 @@ export function TopHeader({ userName, selectedDateIso, onDateChange, className }
         style={{ paddingTop: "env(safe-area-inset-top)" }}
       >
         <div className="mx-auto flex w-full items-center gap-3 px-4 py-3">
-          <button type="button" className="relative shrink-0" aria-label="Perfil">
+          <button
+            type="button"
+            className="relative shrink-0"
+            aria-label="Abrir configuraciones"
+            onClick={toggleSidebar}
+          >
             <Avatar className="size-11 border border-emerald-200/70 bg-emerald-50 text-emerald-700 shadow-sm">
               <AvatarFallback className="bg-emerald-50 text-[11px] font-semibold tracking-[0.18em] text-emerald-700">
                 {initials}

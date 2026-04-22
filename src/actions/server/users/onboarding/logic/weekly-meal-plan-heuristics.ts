@@ -104,50 +104,36 @@ function canonicalizePool(
   return [...new Set(pool.map((food) => resolveCanonicalFoodName(food, category)))];
 }
 
-const objectiveDescriptors: Record<Objetivo, string[]> = {
-  Bajar_grasa: ["ligero", "fresco", "magro", "verde", "limpio", "suave", "delicado"],
-  Ganar_musculo: ["energetico", "potente", "fuerte", "completo", "activo", "andino", "robusto"],
-  Mantenimiento: ["balanceado", "casero", "integral", "estable", "armado", "sereno", "natural"],
-};
+const proteinFallbackNames = [
+  "Pechuga de pollo cocida",
+  "Huevo cocido",
+  "Pescado blanco cocido",
+  "Carne de res magra cocida",
+  "Tofu firme",
+  "Yogur griego natural",
+  "Queso fresco",
+];
 
-const recipeNameBuilders: Record<WeeklyMealType, Array<(parts: Record<string, string>) => string>> = {
-  Desayuno: [
-    ({ descriptor, carb, protein, extra }) => `Desayuno ${descriptor} de ${carb} con ${protein}${extra}`,
-    ({ descriptor, protein, carb, extra }) => `Bowl ${descriptor} de ${protein} con ${carb}${extra}`,
-    ({ descriptor, carb, protein, extra }) => `Plato matinal ${descriptor} de ${carb} y ${protein}${extra}`,
-    ({ descriptor, protein, carb, extra }) => `Combinado ${descriptor} de ${protein} con ${carb}${extra}`,
-    ({ descriptor, carb, protein, extra }) => `Desayuno balanceado ${descriptor} de ${carb} con ${protein}${extra}`,
-    ({ descriptor, protein, carb, extra }) => `Inicio ${descriptor} de ${protein} con ${carb}${extra}`,
-    ({ descriptor, carb, protein, extra }) => `Plato de manana ${descriptor} de ${carb} con ${protein}${extra}`,
-  ],
-  Snack: [
-    ({ descriptor, protein, carb, extra }) => `Snack ${descriptor} de ${protein} con ${carb}${extra}`,
-    ({ descriptor, carb, protein, extra }) => `Merienda ${descriptor} de ${carb} y ${protein}${extra}`,
-    ({ descriptor, protein, carb, extra }) => `Colacion ${descriptor} de ${protein} con ${carb}${extra}`,
-    ({ descriptor, carb, protein, extra }) => `Snack practico ${descriptor} de ${carb} con ${protein}${extra}`,
-    ({ descriptor, protein, carb, extra }) => `Snack balanceado ${descriptor} de ${protein} y ${carb}${extra}`,
-    ({ descriptor, carb, protein, extra }) => `Pausa ${descriptor} de ${carb} con ${protein}${extra}`,
-    ({ descriptor, protein, carb, extra }) => `Merienda ligera ${descriptor} de ${protein} con ${carb}${extra}`,
-  ],
-  Almuerzo: [
-    ({ descriptor, protein, carb, extra }) => `Almuerzo ${descriptor} de ${protein} con ${carb}${extra}`,
-    ({ descriptor, protein, carb, extra }) => `Bowl ${descriptor} de ${protein} y ${carb}${extra}`,
-    ({ descriptor, protein, carb, extra }) => `Plato fuerte ${descriptor} de ${protein} con ${carb}${extra}`,
-    ({ descriptor, protein, carb, extra }) => `Combinado casero ${descriptor} de ${protein} y ${carb}${extra}`,
-    ({ descriptor, protein, carb, extra }) => `Plato andino ${descriptor} de ${protein} con ${carb}${extra}`,
-    ({ descriptor, protein, carb, extra }) => `Salteado ${descriptor} de ${protein} con ${carb}${extra}`,
-    ({ descriptor, protein, carb, extra }) => `Almuerzo completo ${descriptor} de ${protein} y ${carb}${extra}`,
-  ],
-  Cena: [
-    ({ descriptor, protein, carb, extra }) => `Cena ${descriptor} de ${protein} con ${carb}${extra}`,
-    ({ descriptor, protein, carb, extra }) => `Plato nocturno ${descriptor} de ${protein} y ${carb}${extra}`,
-    ({ descriptor, protein, carb, extra }) => `Cena casera ${descriptor} de ${protein} con ${carb}${extra}`,
-    ({ descriptor, protein, carb, extra }) => `Combinado suave ${descriptor} de ${protein} y ${carb}${extra}`,
-    ({ descriptor, protein, carb, extra }) => `Cena balanceada ${descriptor} de ${protein} con ${carb}${extra}`,
-    ({ descriptor, protein, carb, extra }) => `Plato ligero ${descriptor} de ${protein} con ${carb}${extra}`,
-    ({ descriptor, protein, carb, extra }) => `Cena armada ${descriptor} de ${protein} y ${carb}${extra}`,
-  ],
-};
+const carbFallbackNames = [
+  "Arroz basmati cocido",
+  "Avena cocida",
+  "Amaranto cocido",
+  "Papa cocida",
+  "Quinua cocida",
+  "Pan integral",
+];
+
+function expandPool(
+  pool: string[],
+  category: SeedFoodRecord["preferenceCategory"],
+  fallbackNames: string[]
+) {
+  if (pool.length >= 4) {
+    return pool;
+  }
+
+  return canonicalizePool([...pool, ...fallbackNames], category);
+}
 
 function matchesHints(foodName: string, hints: string[]) {
   const normalizedFoodName = foodName.toLowerCase();
@@ -191,8 +177,24 @@ function shouldIncludeFat(objective: Objetivo, speed: VelocidadCambio, mealType:
   return mealType === "Snack" ? dayIndex % 2 === 0 : dayIndex % 3 !== 1;
 }
 
-function buildExtraLabel(extraFoods: string[]) {
-  return extraFoods.length > 0 ? ` y ${extraFoods[0]}` : "";
+function buildRecipeName(mealType: WeeklyMealType, foods: VisibleMealPlanFood[]) {
+  const mealLabel =
+    mealType === "Desayuno"
+      ? "Desayuno"
+      : mealType === "Snack"
+        ? "Snack"
+        : mealType === "Almuerzo"
+          ? "Almuerzo"
+          : "Cena";
+  const protein = foods.find((food) => food.role === "protein")?.name ?? "proteina";
+  const carb = foods.find((food) => food.role === "carb")?.name ?? "carbohidrato";
+  const extras = foods
+    .filter((food) => food.role !== "protein" && food.role !== "carb")
+    .map((food) => food.name)
+    .slice(0, 2)
+    .join(" + ");
+
+  return extras ? `${mealLabel} con ${protein}, ${carb} y ${extras}` : `${mealLabel} con ${protein} y ${carb}`;
 }
 
 function buildPlanDates(): Array<{ dayLabel: string; dateIso: string }> {
@@ -219,14 +221,30 @@ function buildMealFoods(
   const usedNames = new Set<string>();
   const proteinPool =
     mealType === "Desayuno" || mealType === "Snack"
-      ? canonicalizePool(preferFoods(preferences.proteins ?? [], breakfastProteinHints), "proteins")
-      : canonicalizePool(preferFoods(preferences.proteins ?? [], breakfastProteinHints, true), "proteins");
+      ? expandPool(
+          canonicalizePool(preferFoods(preferences.proteins ?? [], breakfastProteinHints), "proteins"),
+          "proteins",
+          proteinFallbackNames
+        )
+      : expandPool(
+          canonicalizePool(preferFoods(preferences.proteins ?? [], breakfastProteinHints, true), "proteins"),
+          "proteins",
+          proteinFallbackNames
+        );
   const carbPool =
     mealType === "Desayuno"
-      ? canonicalizePool(preferFoods(preferences.carbs ?? [], breakfastCarbHints), "carbs")
+      ? expandPool(
+          canonicalizePool(preferFoods(preferences.carbs ?? [], breakfastCarbHints), "carbs"),
+          "carbs",
+          carbFallbackNames
+        )
       : mealType === "Snack"
-        ? canonicalizePool(preferFoods(preferences.carbs ?? [], snackCarbHints), "carbs")
-        : canonicalizePool(preferences.carbs ?? [], "carbs");
+        ? expandPool(
+            canonicalizePool(preferFoods(preferences.carbs ?? [], snackCarbHints), "carbs"),
+            "carbs",
+            carbFallbackNames
+          )
+        : expandPool(canonicalizePool(preferences.carbs ?? [], "carbs"), "carbs", carbFallbackNames);
   const fatPool = canonicalizePool(preferences.fats ?? [], "fats");
   const vegetablePool = canonicalizePool(preferences.vegetables ?? [], "vegetables");
   const fruitPool = canonicalizePool(preferences.fruits ?? [], "fruits");
@@ -239,9 +257,9 @@ function buildMealFoods(
   const fruitFallback = resolveCanonicalFoodName(preferences.fruits?.[0] ?? "Fruta", "fruits");
   const infusionFallback = resolveCanonicalFoodName(preferences.infusions?.[0] ?? "Infusion", "infusions");
 
-  const proteinIndex = mealType === "Cena" ? dayIndex + 1 : dayIndex;
-  const protein = pickUniqueFood(proteinPool, proteinIndex, usedNames, proteinFallback);
-  const carb = pickUniqueFood(carbPool, dayIndex + 2, usedNames, carbFallback);
+  const mealOffset = mealType === "Desayuno" ? 0 : mealType === "Snack" ? 1 : mealType === "Almuerzo" ? 2 : 3;
+  const protein = pickUniqueFood(proteinPool, dayIndex + mealOffset, usedNames, proteinFallback);
+  const carb = pickUniqueFood(carbPool, dayIndex + mealOffset + 1, usedNames, carbFallback);
   const foods: VisibleMealPlanFood[] = [
     { name: protein, role: "protein" },
     { name: carb, role: "carb" },
@@ -280,23 +298,6 @@ function buildMealFoods(
   return foods;
 }
 
-function buildRecipeName(
-  mealType: WeeklyMealType,
-  dayIndex: number,
-  objective: Objetivo,
-  foods: VisibleMealPlanFood[]
-) {
-  const descriptor = objectiveDescriptors[objective][dayIndex % objectiveDescriptors[objective].length];
-  const protein = foods.find((food) => food.role === "protein")?.name ?? "proteina";
-  const carb = foods.find((food) => food.role === "carb")?.name ?? "carbohidrato";
-  const extra = buildExtraLabel(
-    foods.filter((food) => food.role !== "protein" && food.role !== "carb").map((food) => food.name)
-  );
-  const builder = recipeNameBuilders[mealType][dayIndex % recipeNameBuilders[mealType].length];
-
-  return builder({ descriptor, protein, carb, extra });
-}
-
 export function buildHeuristicWeeklyMealPlan(
   input: BuildHeuristicWeeklyMealPlanInput
 ): GeneratedWeeklyMealPlan {
@@ -313,11 +314,11 @@ export function buildHeuristicWeeklyMealPlan(
 
       return {
         mealType,
-        recipeName: buildRecipeName(mealType, dayIndex, input.objective, foods),
+        recipeName: buildRecipeName(mealType, foods),
         foods,
         instructions: buildFallbackMealInstructions({
           mealType,
-          recipeName: buildRecipeName(mealType, dayIndex, input.objective, foods),
+          recipeName: buildRecipeName(mealType, foods),
           ingredients: foods,
         }),
       };
