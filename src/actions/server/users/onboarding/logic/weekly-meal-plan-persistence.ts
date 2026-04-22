@@ -49,9 +49,7 @@ function getBasePortionGrams(
 
 function getPlannedPortion(
   role: PersistedMealFood["role"],
-  mealType: WeeklyMealType,
-  objective: Objetivo,
-  speed: VelocidadCambio
+  mealType: WeeklyMealType
 ) {
   if (role === "infusion") {
     return { gramsReference: 250, portionLabel: "250 ml" };
@@ -250,7 +248,7 @@ export async function persistWeeklyMealPlan(
               return {
                 ...food,
                 foodId: resolvedFood.id,
-                ...getPlannedPortion(food.role, meal.mealType, input.objective, input.speed),
+                ...getPlannedPortion(food.role, meal.mealType),
                 nutrition: {
                   calories: roundNutrition(resolvedFood.calorias ?? 0),
                   proteins: roundNutrition(resolvedFood.proteinas ?? 0),
@@ -280,7 +278,7 @@ export async function persistWeeklyMealPlan(
             return {
               ...food,
               foodId: createdFood.id,
-              ...getPlannedPortion(food.role, meal.mealType, input.objective, input.speed),
+              ...getPlannedPortion(food.role, meal.mealType),
               nutrition: {
                 calories: roundNutrition(createdFood.calorias ?? 0),
                 proteins: roundNutrition(createdFood.proteinas ?? 0),

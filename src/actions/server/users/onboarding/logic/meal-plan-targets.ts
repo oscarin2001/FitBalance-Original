@@ -1,6 +1,7 @@
 import type { NivelActividad, Objetivo, VelocidadCambio } from "@prisma/client";
 
 import type { AiTargets } from "../types/onboarding-action-types";
+import type { ExperienceLevelValue, TrainingTypeValue } from "../types/onboarding-ui-types";
 
 import { buildAiTargets, calculateAge } from "./onboarding-calculator";
 
@@ -13,6 +14,10 @@ type ResolveMealPlanTargetsInput = {
   objetivo: Objetivo;
   nivelActividad: NivelActividad;
   velocidadCambio: VelocidadCambio;
+  tipoEntrenamiento?: TrainingTypeValue | null;
+  nivelExperiencia?: ExperienceLevelValue | null;
+  frecuenciaEntreno?: number | null;
+  anosEntrenando?: number | null;
   kcalObjetivo?: number | null;
   proteinasG?: number | null;
   grasasG?: number | null;
@@ -44,6 +49,10 @@ export function resolveMealPlanTargets(input: ResolveMealPlanTargetsInput): AiTa
     objetivo: input.objetivo,
     nivelActividad: input.nivelActividad,
     velocidadCambio: input.velocidadCambio,
+    tipoEntrenamiento: input.tipoEntrenamiento,
+    nivelExperiencia: input.nivelExperiencia,
+    frecuenciaEntreno: input.frecuenciaEntreno,
+    anosEntrenando: input.anosEntrenando,
   });
 
   if (

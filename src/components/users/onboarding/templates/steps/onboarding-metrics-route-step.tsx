@@ -62,7 +62,7 @@ export function OnboardingMetricsRouteStep({
       }
 
       clearDraft();
-      router.push("/users/onboarding/foods");
+      router.push("/users/onboarding/training");
     } catch {
       setMessage("No se pudo conectar con el servidor. Intenta nuevamente.");
     } finally {
@@ -93,15 +93,15 @@ export function OnboardingMetricsRouteStep({
     <OnboardingStepShell
       step="metrics"
       userName={userName}
-      title="Configura tu perfil"
-      subtitle="Empezamos con tus datos base para calcular objetivos nutricionales reales."
+      title="Define tu objetivo"
+      subtitle="Primero elegimos tu objetivo. El contexto físico va en el siguiente paso."
     >
       <MetricsStepForm
         value={metrics}
         isPending={isPending}
         fieldErrors={metricsErrors}
         errorMessage={message}
-        submitLabel="Guardar y continuar"
+        submitLabel="Continuar"
         backLabel="Volver al inicio"
         onChange={setMetrics}
         onClearFieldError={(field) =>

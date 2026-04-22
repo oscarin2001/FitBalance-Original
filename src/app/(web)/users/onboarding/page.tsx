@@ -10,6 +10,10 @@ export default async function OnboardingPage() {
     redirect("/users/onboarding/summary");
   }
 
+  if (state.initialStep === "training") {
+    redirect("/users/onboarding/training");
+  }
+
   if (state.initialStep === "foods") {
     redirect("/users/onboarding/foods");
   }

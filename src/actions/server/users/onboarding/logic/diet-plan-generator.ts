@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import type { NivelActividad, Objetivo, VelocidadCambio } from "@prisma/client";
 
@@ -16,12 +18,17 @@ import type {
 } from "../types";
 
 import { onboardingDays } from "../constants";
+import { buildHeuristicWeeklyMealPlan } from "./weekly-meal-plan-heuristics";
 
 type DietPlanInput = {
   userName: string;
   objetivo: Objetivo;
   nivelActividad: NivelActividad;
   velocidadCambio: VelocidadCambio;
+  tipoEntrenamiento?: string | null;
+  nivelExperiencia?: string | null;
+  frecuenciaEntreno?: number | null;
+  anosEntrenando?: number | null;
   targets: AiTargets;
   preferencias: FoodPreferenceMap;
   diasDieta: unknown;
@@ -219,6 +226,10 @@ Usuario: ${input.userName}
 Objetivo: ${input.objetivo}
 Velocidad: ${input.velocidadCambio}
 Nivel de actividad: ${input.nivelActividad}
+Tipo de entrenamiento: ${input.tipoEntrenamiento ?? "No entrena"}
+Nivel de experiencia: ${input.nivelExperiencia ?? "Principiante"}
+Frecuencia semanal: ${input.frecuenciaEntreno ?? 0} dias
+Anios entrenando: ${input.anosEntrenando ?? 0}
 No recalcules objetivos nutricionales: ya vienen calculados desde el algoritmo TS.
 Objetivos diarios calculados por TS (usarlos como rango de ajuste):
 - kcal: ${input.targets.kcalObjetivo}
@@ -244,23 +255,31 @@ Formato estricto:
 }
 
 export async function generateDietPlan(input: DietPlanInput): Promise<GeneratedWeeklyMealPlan> {
-  const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+  const selectedDays = Array.isArray(input.diasDieta) ? input.diasDieta.length : onboardingDays.length;
+  const contextLabel = [
+    input.nivelActividad,
+    input.tipoEntrenamiento,
+    input.nivelExperiencia,
+    input.frecuenciaEntreno != null ? `${input.frecuenciaEntreno}x` : null,
+    input.anosEntrenando != null ? `${input.anosEntrenando}y` : null,
+    `${selectedDays}d`,
+  ]
+    .filter((value): value is string => Boolean(value))
+    .join(" | ");
 
-  if (!apiKey) {
-    throw new Error("Estamos generando el plan por ti mientras carga. Intenta nuevamente en unos segundos.");
-  }
+  const plan = buildHeuristicWeeklyMealPlan({
+    objective: input.objetivo,
+    speed: input.velocidadCambio,
+    hydrationLiters: input.targets.aguaLitros,
+    preferences: input.preferencias,
+    model: contextLabel ? `heuristic-balanced-planner (${contextLabel})` : "heuristic-balanced-planner",
+  });
 
-  try {
-    const client = new GoogleGenerativeAI(apiKey);
-    const model = client.getGenerativeModel({ model: MODEL_ID });
-    const result = await model.generateContent(buildPrompt(input));
-    const plan = parseJsonFromModel(result.response.text());
-    return normalizePlan(plan, input.preferencias, input.targets.aguaLitros);
-  } catch (error) {
-    if (error instanceof Error) {
-      throw error;
-    }
-
-    throw new Error("Estamos generando el plan por ti mientras carga. Intenta nuevamente en unos segundos.");
-  }
+  return {
+    ...plan,
+    warning:
+      input.targets.corrections && input.targets.corrections.length > 0
+        ? `Ajustes de seguridad aplicados para ${input.userName}: ${input.targets.corrections.join(" ")}`
+        : plan.warning,
+  };
 }

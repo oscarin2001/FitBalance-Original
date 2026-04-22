@@ -3,6 +3,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 type UserWeeklyPlanCardProps = {
   plan: UserNutritionPlan | null;
+  profile: {
+    age: number;
+    sex: string;
+    heightCm: number | null;
+    weightKg: number | null;
+    targetWeightKg: number | null;
+    trainingType: string | null;
+    frequency: number | null;
+    yearsTraining: number | null;
+  };
 };
 
 function formatDate(value: string) {
@@ -17,7 +27,7 @@ function formatDate(value: string) {
   });
 }
 
-export function UserWeeklyPlanCard({ plan }: UserWeeklyPlanCardProps) {
+export function UserWeeklyPlanCard({ plan, profile }: UserWeeklyPlanCardProps) {
   if (!plan) {
     return (
       <Card className="rounded-3xl border border-slate-200/80 bg-white/95 shadow-xl shadow-slate-200/60">
@@ -49,6 +59,27 @@ export function UserWeeklyPlanCard({ plan }: UserWeeklyPlanCardProps) {
               <span className="font-medium text-amber-800">Nota:</span> {plan.warning}
             </p>
           ) : null}
+        </CardContent>
+      </Card>
+
+      <Card className="rounded-3xl border border-cyan-200/80 bg-cyan-50/70 shadow-lg shadow-cyan-100/50">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-xl text-slate-900">Cálculo energético</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-2 text-sm text-slate-700 md:grid-cols-2">
+          <p><span className="font-medium text-slate-500">Fórmula basal:</span> {plan.formulaName}</p>
+          <p><span className="font-medium text-slate-500">Edad:</span> {profile.age} años</p>
+          <p><span className="font-medium text-slate-500">Sexo:</span> {profile.sex}</p>
+          <p><span className="font-medium text-slate-500">Altura:</span> {profile.heightCm ?? "Sin dato"} cm</p>
+          <p><span className="font-medium text-slate-500">Peso actual:</span> {profile.weightKg ?? "Sin dato"} kg</p>
+          <p><span className="font-medium text-slate-500">Peso objetivo:</span> {profile.targetWeightKg ?? "Sin dato"} kg</p>
+          <p><span className="font-medium text-slate-500">TMB:</span> {Math.round(plan.tmbKcal)} kcal</p>
+          <p><span className="font-medium text-slate-500">Gasto total (TDEE):</span> {Math.round(plan.gastoTotalKcal)} kcal</p>
+          <p><span className="font-medium text-slate-500">Movimiento diario:</span> {plan.activityLevel} ({plan.walkingFactor.toFixed(2)}x)</p>
+          <p><span className="font-medium text-slate-500">Entrenamiento:</span> {profile.trainingType ?? "Sin dato"} ({plan.trainingFactor.toFixed(2)}x)</p>
+          <p><span className="font-medium text-slate-500">Frecuencia:</span> {profile.frequency ?? 0} días/semana</p>
+          <p><span className="font-medium text-slate-500">Años entrenando:</span> {profile.yearsTraining ?? 0}</p>
+          <p className="md:col-span-2"><span className="font-medium text-slate-500">Ajuste por objetivo:</span> {plan.ajusteCaloricoKcal >= 0 ? "+" : ""}{Math.round(plan.ajusteCaloricoKcal)} kcal/día ({plan.ajusteCaloricoPct.toFixed(1)}%)</p>
         </CardContent>
       </Card>
 

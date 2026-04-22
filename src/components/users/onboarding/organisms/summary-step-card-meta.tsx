@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Activity,
   Cake,
   CalendarDays,
+  Dumbbell,
   Ruler,
   Scale,
   Target,
@@ -62,6 +63,9 @@ type SummaryProfileCardProps = {
   objective: string;
   activity: string;
   speedTitle: string;
+  trainingType: string;
+  trainingFrequency: number;
+  trainingYears: number;
   weightKg: number;
   targetWeightKg: number;
 };
@@ -74,6 +78,9 @@ export function SummaryProfileCard({
   objective,
   activity,
   speedTitle,
+  trainingType,
+  trainingFrequency,
+  trainingYears,
   weightKg,
   targetWeightKg,
 }: SummaryProfileCardProps) {
@@ -98,8 +105,14 @@ export function SummaryProfileCard({
           value={heightCm ? `${heightCm} cm` : "Sin dato"}
         />
         <SummaryDetailRow icon={Target} label="Objetivo" value={objective} />
-        <SummaryDetailRow icon={Activity} label="Actividad" value={activity} />
         <SummaryDetailRow icon={CalendarDays} label="Días de dieta" value="Todos los días" />
+      </div>
+
+      <div className="grid gap-2 rounded-2xl border border-slate-200/70 bg-slate-50 px-4 py-3 sm:grid-cols-2">
+        <SummaryDetailRow icon={Activity} label="Movimiento diario" value={activity} />
+        <SummaryDetailRow icon={Dumbbell} label="Tipo de entrenamiento" value={trainingType} />
+        <SummaryDetailRow icon={Zap} label="Frecuencia" value={`${trainingFrequency} días por semana`} />
+        <SummaryDetailRow icon={Scale} label="Años entrenando" value={`${trainingYears} años`} />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 pt-1">
@@ -138,12 +151,6 @@ export function SummaryTermsDialog({
   const [open, setOpen] = useState(false);
   const [checked, setChecked] = useState(accepted);
 
-  useEffect(() => {
-    if (open) {
-      setChecked(accepted);
-    }
-  }, [accepted, open]);
-
   function handleConfirm() {
     if (!checked) {
       return;
@@ -153,19 +160,27 @@ export function SummaryTermsDialog({
     setOpen(false);
   }
 
+  function handleOpenChange(nextOpen: boolean) {
+    if (nextOpen) {
+      setChecked(accepted);
+    }
+
+    setOpen(nextOpen);
+  }
+
   return (
     <>
       <Button
         variant="outline"
         className="w-full justify-between rounded-xl"
-        onClick={() => setOpen(true)}
+        onClick={() => handleOpenChange(true)}
         disabled={disabled}
       >
         <span>Ver términos y condiciones</span>
         <span className="text-xs text-slate-500">{accepted ? "Aceptados" : "Pendientes"}</span>
       </Button>
 
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Términos y condiciones</DialogTitle>

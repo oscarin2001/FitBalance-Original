@@ -114,7 +114,7 @@ export function OnboardingFoodsRouteStep({
         isPending={isPending}
         fieldErrors={foodsErrors}
         errorMessage={message}
-        onBack={() => router.push("/users/onboarding/data")}
+        onBack={() => router.push("/users/onboarding/training?edit=training")}
         onContinue={handleContinue}
         onToggleFood={handleToggleFood}
       />

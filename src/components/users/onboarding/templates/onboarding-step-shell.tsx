@@ -14,6 +14,7 @@ type OnboardingStepShellProps = {
 export function OnboardingStepShell({
   step,
   title,
+  subtitle,
   children,
 }: OnboardingStepShellProps) {
   return (
@@ -25,10 +26,13 @@ export function OnboardingStepShell({
       </div>
 
       <section className="relative grid w-full max-w-3xl gap-5">
-        <header className="mx-auto grid w-full max-w-2xl gap-3 text-center">
-          <h1 className="text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
-            {title}
-          </h1>
+        <header className="mx-auto grid w-full max-w-2xl justify-items-center gap-3 text-center">
+          <h1 className="text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">{title}</h1>
+          {subtitle ? (
+            <p className="mx-auto max-w-xl text-sm leading-6 text-slate-600 sm:text-base">
+              {subtitle}
+            </p>
+          ) : null}
         </header>
 
         <div className="mx-auto w-full max-w-2xl">

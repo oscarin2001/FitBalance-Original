@@ -50,8 +50,6 @@ export function useMetricsStepController({
   const objective = watchedValues.objetivo;
   const activeStepIndex = getStepIndexFromFieldErrors(fieldErrors) ?? stepIndex;
   const currentStep = metricsSubsteps[activeStepIndex] ?? metricsSubsteps[0];
-  const progressValue = ((activeStepIndex + 1) / metricsSubsteps.length) * 100;
-
   const previewMetrics = useMemo(
     () => buildMetricsDraftFromForm(watchedValues, { heightUnit, weightUnit }),
     [heightUnit, watchedValues, weightUnit]
@@ -92,7 +90,6 @@ export function useMetricsStepController({
 
     onChange(previewMetrics);
   }, [onChange, previewMetrics, value]);
-
   useEffect(() => {
     if (objective !== "Mantenimiento" || form.getValues("usarObjetivoSugerido")) {
       return;
@@ -151,7 +148,6 @@ export function useMetricsStepController({
     objective,
     activeStepIndex,
     currentStep,
-    progressValue,
     previewMetrics,
     healthyRange,
     healthyStatus,

@@ -64,15 +64,6 @@ export type PersistedWeeklyMealPlan = Omit<GeneratedWeeklyMealPlan, "days"> & {
   days: PersistedMealPlanDay[];
 };
 
-export type NutritionPdfSummary = {
-  objetivo: Objetivo;
-  imc: number | null;
-  nivelActividad: NivelActividad;
-  velocidadCambio: VelocidadCambio;
-  aguaLitrosDiarios: number;
-  caloriasObjetivoTotal: number;
-};
-
 export type SeedFoodRecord = {
   name: string;
   categoryLabel: string;

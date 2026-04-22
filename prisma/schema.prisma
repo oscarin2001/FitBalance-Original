@@ -22,6 +22,10 @@ model Usuario {
   pais                      String?
   peso_objetivo_kg          Float?
   velocidad_cambio          VelocidadCambio?
+  tipo_entrenamiento        TipoEntrenamiento?
+  nivel_experiencia         NivelExperiencia?
+  frecuencia_entreno        Int?
+  anos_entrenando           Float?
   terminos_aceptados        Boolean              @default(false)
   fecha_creacion            DateTime             @default(now())
   updatedAt                 DateTime             @updatedAt
@@ -240,6 +244,19 @@ enum VelocidadCambio {
   Rapido
   Moderado
   Lento
+}
+
+enum TipoEntrenamiento {
+  No_entrena
+  Cardio
+  Mixto
+  Musculacion
+}
+
+enum NivelExperiencia {
+  Principiante
+  Intermedio
+  Avanzado
 }
 
 enum AlimentoCategoria {

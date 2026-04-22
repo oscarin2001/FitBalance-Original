@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import type { UserDashboardPlan } from "@/actions/server/users/types";
@@ -14,6 +14,7 @@ import {
   type DailyLogProfile,
 } from "./organisms/daily-log-view";
 import { TopHeader } from "./top-header";
+import { downloadNutritionPlanPdf } from "./settings/pdf";
 
 function resolveDailyLogProfile(objective: UserDashboardPlan["objective"]): DailyLogProfile {
   if (objective === "Bajar_grasa") {
@@ -59,6 +60,8 @@ export function DashboardView({ userName, dashboard, isPlanPending }: DashboardV
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const initialTab = useMemo(() => resolveDashboardTab(searchParams.get("tab")), [searchParams]);
+  const shouldDownloadPdf = searchParams.get("pdf") === "1";
+  const didTriggerPdfDownload = useRef(false);
   const [range, setRange] = useState<"today" | "week">("today");
   const [activeTab, setActiveTab] = useState<BottomNavbarTab>(initialTab);
 
@@ -78,6 +81,49 @@ export function DashboardView({ userName, dashboard, isPlanPending }: DashboardV
 
     section.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [activeTab, dashboard, isPlanPending]);
+
+  useEffect(() => {
+    if (!shouldDownloadPdf || isPlanPending || !dashboard || didTriggerPdfDownload.current) {
+      return;
+    }
+
+    didTriggerPdfDownload.current = true;
+
+    const runPdfDownload = async () => {
+      try {
+        const response = await fetch("/api/users/diet", { method: "POST" });
+        const payload = (await response.json()) as {
+          ok: boolean;
+          data?: {
+            pdfPayload?: {
+              serializedText: string;
+              user: { nombre: string };
+            };
+          };
+          error?: string;
+        };
+
+        if (!response.ok || !payload.ok || !payload.data?.pdfPayload?.serializedText) {
+          throw new Error(payload.error ?? "No se pudo generar el PDF.");
+        }
+
+        downloadNutritionPlanPdf({
+          userName,
+          serializedText: payload.data.pdfPayload.serializedText,
+        });
+
+        const nextParams = new URLSearchParams(searchParams.toString());
+        nextParams.delete("pdf");
+        const nextQuery = nextParams.toString();
+        router.replace(nextQuery ? `${pathname}?${nextQuery}` : pathname, { scroll: false });
+      } catch (error) {
+        console.error("Error downloading nutrition PDF", error);
+        didTriggerPdfDownload.current = false;
+      }
+    };
+
+    void runPdfDownload();
+  }, [dashboard, isPlanPending, pathname, router, searchParams, shouldDownloadPdf, userName]);
 
   function handleTabChange(tab: BottomNavbarTab) {
     setActiveTab(tab);

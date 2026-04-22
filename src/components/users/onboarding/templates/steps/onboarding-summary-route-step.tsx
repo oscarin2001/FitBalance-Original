@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
 import { finalizeOnboardingAction } from "@/actions/server/users/onboarding";
-import type { MetricsDraft } from "@/actions/server/users/onboarding/types/onboarding-ui-types";
+import type { MetricsDraft, TrainingDraft } from "@/actions/server/users/onboarding/types/onboarding-ui-types";
 import { SummaryStepCard } from "@/components/users/onboarding/organisms/summary-step-card";
 
 import { OnboardingStepShell } from "../onboarding-step-shell";
@@ -12,11 +12,13 @@ import { OnboardingStepShell } from "../onboarding-step-shell";
 type OnboardingSummaryRouteStepProps = {
   userName: string;
   initialMetrics: MetricsDraft;
+  initialTraining: TrainingDraft;
 };
 
 export function OnboardingSummaryRouteStep({
   userName,
   initialMetrics,
+  initialTraining,
 }: OnboardingSummaryRouteStepProps) {
   const router = useRouter();
   const [message, setMessage] = useState("");
@@ -37,7 +39,7 @@ export function OnboardingSummaryRouteStep({
           return;
         }
 
-        router.replace("/users");
+        router.replace("/users?pdf=1");
       } catch {
         setMessage("No se pudo conectar con el servidor. Intenta nuevamente.");
       }
@@ -53,6 +55,7 @@ export function OnboardingSummaryRouteStep({
     >
       <SummaryStepCard
         metrics={initialMetrics}
+        training={initialTraining}
         isPending={isPending}
         errorMessage={message}
         onBack={() => router.push("/users/onboarding/foods")}

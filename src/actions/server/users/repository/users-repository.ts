@@ -36,6 +36,10 @@ const userDetailSelect = Prisma.validator<Prisma.UsuarioSelect>()({
   peso_kg: true,
   objetivo: true,
   nivel_actividad: true,
+  tipo_entrenamiento: true,
+  nivel_experiencia: true,
+  frecuencia_entreno: true,
+  anos_entrenando: true,
   pais: true,
   peso_objetivo_kg: true,
   velocidad_cambio: true,
@@ -140,6 +144,7 @@ function parseNutritionPlan(planAi: Prisma.JsonValue | null): UserNutritionPlan 
     return null;
   }
 
+  const targets = isRecord(planAi.targets) ? planAi.targets : null;
   const pdfPayload = isRecord(planAi.nutritionPdfPayload) ? planAi.nutritionPdfPayload : null;
   const user = pdfPayload && isRecord(pdfPayload.user) ? pdfPayload.user : null;
   const weeklyPlan = pdfPayload && Array.isArray(pdfPayload.weeklyPlan) ? pdfPayload.weeklyPlan : [];
@@ -176,6 +181,13 @@ function parseNutritionPlan(planAi: Prisma.JsonValue | null): UserNutritionPlan 
     imc: getNumber(user.imc),
     activityLevel: activityLevel as UserNutritionPlan["activityLevel"],
     speed: speed as UserNutritionPlan["speed"],
+    formulaName: getString(targets?.formulaName) || "Mifflin-St Jeor",
+    tmbKcal: getNumber(targets?.tmbKcal) ?? 0,
+    gastoTotalKcal: getNumber(targets?.gastoTotalKcal) ?? 0,
+    walkingFactor: getNumber(targets?.walkingFactor) ?? 1,
+    trainingFactor: getNumber(targets?.trainingFactor) ?? 1,
+    ajusteCaloricoPct: getNumber(targets?.ajusteCaloricoPct) ?? 0,
+    ajusteCaloricoKcal: getNumber(targets?.ajusteCaloricoKcal) ?? 0,
     dailyWaterLiters: getNumber(user.aguaLitrosDiarios) ?? 0,
     targetCalories: getNumber(user.caloriasObjetivoTotal) ?? 0,
     warning: getString(planAi.warning) || null,

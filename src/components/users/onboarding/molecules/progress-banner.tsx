@@ -1,7 +1,7 @@
-import { Progress } from "@/components/ui/progress";
 import type { WizardStep } from "@/actions/server/users/onboarding/types/onboarding-ui-types";
+import { Progress } from "@/components/ui/progress";
 
-const orderedSteps: WizardStep[] = ["metrics", "foods", "summary"];
+const orderedSteps: WizardStep[] = ["metrics", "training", "foods", "summary"];
 
 export function ProgressBanner({ step }: { step: WizardStep }) {
   const activeIndex = orderedSteps.findIndex((item) => item === step);

@@ -27,7 +27,7 @@ export const metricsFormSchema = z
       message: "Ingresa un peso actual valido.",
     }),
     objetivo: z.enum(["Bajar_grasa", "Mantenimiento", "Ganar_musculo"] as const),
-    nivelActividad: z.enum(["Sedentario", "Ligero", "Moderado", "Activo"] as const),
+    nivelActividad: z.enum(["Sedentario", "Ligero", "Moderado", "Activo", "Extremo"] as const),
     velocidadCambio: z.enum(["Lento", "Moderado", "Rapido"] as const),
     usarObjetivoSugerido: z.boolean(),
     pesoObjetivoManual: z.string(),
@@ -71,7 +71,7 @@ export const metricsFormSchema = z
   });
 
 export const objectiveDescriptions: Record<ObjectiveValue, string> = {
-  Bajar_grasa: "Reducir grasa sin perder el foco en adherencia y energia.",
-  Mantenimiento: "Mantener tu peso actual como referencia saludable.",
-  Ganar_musculo: "Subir de peso de forma progresiva, priorizando masa magra.",
+  Bajar_grasa: "Pierde grasa con un ritmo sostenible.",
+  Mantenimiento: "Mantén tu peso y energía estables.",
+  Ganar_musculo: "Gana peso priorizando masa magra.",
 };

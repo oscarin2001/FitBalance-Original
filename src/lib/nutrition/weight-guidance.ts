@@ -98,17 +98,17 @@ export function getSuggestedTargetCopy(input: {
   const status = getHealthyWeightStatus(input.currentWeightKg, input.heightCm);
 
   if (input.objective === "Mantenimiento") {
-    return "Usaremos tu peso actual como referencia de mantenimiento.";
+    return "Tu peso actual será la referencia.";
   }
 
   if (input.objective === "Bajar_grasa") {
     return status === "above"
-      ? "La sugerencia se acerca al limite superior del rango saludable."
-      : "La sugerencia plantea un recorte conservador para preservar adherencia.";
+      ? "Bajaremos hacia el rango saludable."
+      : "Usaremos un recorte suave para sostener el plan.";
   }
 
   return status === "below"
-    ? "La sugerencia se acerca al limite inferior del rango saludable."
-    : "La sugerencia plantea una subida progresiva sin ser agresiva.";
+    ? "Subiremos hacia el rango saludable."
+    : "Usaremos una subida progresiva.";
 }
 

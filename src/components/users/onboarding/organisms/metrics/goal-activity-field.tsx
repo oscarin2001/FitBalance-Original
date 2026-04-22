@@ -1,3 +1,4 @@
+import { Check } from "lucide-react";
 import type { UseFormReturn } from "react-hook-form";
 
 import { activityOptions } from "@/actions/server/users/onboarding/constants";
@@ -7,22 +8,23 @@ import type {
 } from "@/actions/server/users/onboarding/types/onboarding-ui-types";
 import type { MetricsFormValues } from "@/actions/server/users/onboarding/logic";
 import {
+  FormControl,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Badge } from "@/components/ui/badge";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { cn } from "@/lib/utils";
 
 import type { MetricsStepFormFieldErrors } from "./metrics-step-types";
 
-const activityDescriptions: Partial<Record<ActivityValue, string>> = {
-  Sedentario: "Poco movimiento fuera de casa o del trabajo.",
-  Ligero: "Te mueves algo, pero entrenas de forma esporadica.",
-  Moderado: "Tienes actividad varios dias a la semana.",
-  Activo: "Entrenas o te mantienes en movimiento casi todos los dias.",
-  Extremo: "Tu rutina tiene mucha demanda fisica o entrenas con alta frecuencia.",
+const activityDescriptions: Record<ActivityValue, string> = {
+  Sedentario: "Casi todo el día sentado.",
+  Ligero: "Caminas o te mueves poco.",
+  Moderado: "Tienes movimiento frecuente.",
+  Activo: "Tu día exige bastante movimiento.",
+  Extremo: "Tu actividad física diaria es muy alta.",
 };
 
 type GoalActivityFieldProps = {
@@ -51,43 +53,50 @@ export function GoalActivityField({
       name="nivelActividad"
       render={({ field }) => (
         <FormItem className="grid gap-3">
-          <FormLabel>Actividad diaria</FormLabel>
-          <div role="radiogroup" aria-label="Actividad diaria" className="grid gap-3 sm:grid-cols-2">
-            {activityOptions.map((option) => {
-              const selected = field.value === option.value;
+          <FormLabel>Movimiento diario</FormLabel>
+          <p className="text-sm leading-6 text-slate-500">
+            Solo cuenta tu movimiento general. El ejercicio estructurado va aparte.
+          </p>
+          <FormControl>
+            <RadioGroup
+              value={field.value}
+              onValueChange={(nextValue) => {
+                field.onChange(nextValue);
+                onClearError("nivelActividad");
+                window.requestAnimationFrame(onAdvance);
+              }}
+              className="grid gap-3 md:grid-cols-2 xl:grid-cols-3"
+            >
+              {activityOptions.map((option) => {
+                const selected = field.value === option.value;
 
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  aria-pressed={selected}
-                  onClick={() => {
-                    field.onChange(option.value);
-                    onClearError("nivelActividad");
-                    window.requestAnimationFrame(onAdvance);
-                  }}
-                  className={cn(
-                    "grid gap-2 rounded-2xl border px-4 py-3 text-left transition-all",
-                    selected
-                      ? "border-cyan-300 bg-cyan-50 shadow-sm shadow-cyan-100"
-                      : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
-                  )}
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-semibold text-slate-950">{option.label}</span>
-                    {selected ? (
-                      <Badge variant="outline" className="rounded-full border-cyan-300 bg-white text-cyan-700">
-                        Elegido
-                      </Badge>
-                    ) : null}
-                  </div>
-                  <p className="text-sm text-slate-700">
-                    {activityDescriptions[option.value] ?? "Selecciona este nivel si encaja con tu rutina diaria."}
-                  </p>
-                </button>
-              );
-            })}
-          </div>
+                return (
+                  <label
+                    key={option.value}
+                    className={cn(
+                      "grid cursor-pointer gap-3 rounded-2xl border bg-white p-4 transition-all",
+                      selected
+                        ? "border-cyan-300 bg-cyan-50/80 shadow-sm shadow-cyan-100"
+                        : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
+                    )}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-start gap-3">
+                        <RadioGroupItem value={option.value} className="sr-only" />
+                        <div className="grid gap-1">
+                          <span className="font-semibold text-slate-950">{option.label}</span>
+                          <p className="text-sm leading-5 text-slate-600">
+                            {activityDescriptions[option.value]}
+                          </p>
+                        </div>
+                      </div>
+                      {selected ? <Check className="size-4 text-cyan-600" /> : null}
+                    </div>
+                  </label>
+                );
+              })}
+            </RadioGroup>
+          </FormControl>
           <FormMessage>{getFieldErrorMessage(fieldErrors, "nivelActividad")}</FormMessage>
         </FormItem>
       )}

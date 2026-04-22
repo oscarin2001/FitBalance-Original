@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowLeft, CheckCircle2, Loader2, Target } from "lucide-react";
+import { ArrowLeft, CheckCircle2, ClipboardCheck, Loader2 } from "lucide-react";
 
-import { speedGuides } from "@/actions/server/users/onboarding/constants";
-import type { MetricsDraft } from "@/actions/server/users/onboarding/types/onboarding-ui-types";
+import { objectiveOptions, speedGuides, trainingTypeOptions } from "@/actions/server/users/onboarding/constants";
+import type { MetricsDraft, TrainingDraft } from "@/actions/server/users/onboarding/types/onboarding-ui-types";
 import { capitalizeWords, SummaryProfileCard, SummaryTermsDialog } from "./summary-step-card-meta";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,6 +19,7 @@ const pendingStages = [
 
 type SummaryStepCardProps = {
   metrics: MetricsDraft;
+  training: TrainingDraft;
   isPending: boolean;
   errorMessage?: string;
   onBack: () => void;
@@ -26,6 +27,7 @@ type SummaryStepCardProps = {
 };
 export function SummaryStepCard({
   metrics,
+  training,
   isPending,
   errorMessage,
   onBack,
@@ -34,6 +36,11 @@ export function SummaryStepCard({
   const [pendingStageIndex, setPendingStageIndex] = useState(0);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const selectedSpeedGuide = speedGuides[metrics.velocidadCambio];
+  const objectiveLabel =
+    objectiveOptions.find((option) => option.value === metrics.objetivo)?.label ?? metrics.objetivo;
+  const trainingTypeLabel =
+    trainingTypeOptions.find((option) => option.value === training.tipoEntrenamiento)?.label ??
+    training.tipoEntrenamiento;
   const fullName = capitalizeWords(`${metrics.nombre} ${metrics.apellido}`);
   const age = calculateAgeFromBirthDate(metrics.fechaNacimiento);
 
@@ -59,7 +66,7 @@ export function SummaryStepCard({
     <Card className="mx-auto w-full max-w-2xl rounded-[2rem] border border-slate-200/70 bg-white/90 shadow-2xl shadow-slate-300/30 backdrop-blur">
       <CardHeader className="space-y-2 pb-2 text-center">
         <CardTitle className="flex items-center justify-center gap-2 text-2xl tracking-tight text-slate-900">
-          <Target className="size-5 text-primary" />
+          <ClipboardCheck className="size-5 text-primary" />
           Resumen final
         </CardTitle>
       </CardHeader>
@@ -70,9 +77,12 @@ export function SummaryStepCard({
           age={age}
           sex={metrics.sexo}
           heightCm={metrics.alturaCm}
-          objective={metrics.objetivo.replace("_", " ")}
+          objective={objectiveLabel}
           activity={metrics.nivelActividad}
           speedTitle={selectedSpeedGuide.title}
+          trainingType={trainingTypeLabel}
+          trainingFrequency={training.frecuenciaEntreno}
+          trainingYears={training.anosEntrenando}
           weightKg={metrics.pesoKg}
           targetWeightKg={metrics.pesoObjetivoKg}
         />
@@ -105,7 +115,7 @@ export function SummaryStepCard({
           </Button>
           <Button onClick={onFinish} className="h-11 rounded-xl" disabled={isPending || !acceptedTerms}>
             <CheckCircle2 className="size-4" />
-            {isPending ? "Generando plan..." : "Finalizar"}
+            {isPending ? "Guardando..." : "Guardar y terminar"}
           </Button>
         </div>
       </CardContent>

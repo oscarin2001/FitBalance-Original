@@ -10,7 +10,6 @@ import type {
 } from "@/actions/server/users/onboarding/types/onboarding-ui-types";
 import { Separator } from "@/components/ui/separator";
 
-import { GoalActivityField } from "./goal-activity-field";
 import { GoalObjectiveField } from "./goal-objective-field";
 import { GoalSpeedField } from "./goal-speed-field";
 import type { MetricsStepFormFieldErrors } from "./metrics-step-types";
@@ -53,8 +52,6 @@ export function GoalStepSection({
   onOpenTargetEditor,
   onClearError,
 }: GoalStepSectionProps) {
-  const nextSectionId = objective !== "Mantenimiento" ? "goal-speed-section" : "goal-target-section";
-
   return (
     <section className="grid gap-6">
       <div id="goal-objective-section" className="scroll-mt-24">
@@ -62,22 +59,16 @@ export function GoalStepSection({
           form={form}
           fieldErrors={fieldErrors}
           onClearError={onClearError}
-          onAdvance={() => scrollToSection("goal-activity-section")}
+          onAdvance={() => {
+            const nextObjective = form.getValues("objetivo");
+            scrollToSection(nextObjective === "Mantenimiento" ? "goal-target-section" : "goal-speed-section");
+          }}
         />
       </div>
 
       <Separator />
 
       <div className="grid gap-5">
-        <div id="goal-activity-section" className="scroll-mt-24">
-          <GoalActivityField
-            form={form}
-            fieldErrors={fieldErrors}
-            onClearError={onClearError}
-            onAdvance={() => scrollToSection(nextSectionId)}
-          />
-        </div>
-
         {objective !== "Mantenimiento" ? (
           <div id="goal-speed-section" className="scroll-mt-24">
             <GoalSpeedField

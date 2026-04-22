@@ -11,15 +11,10 @@ export type NutritionGuardrails = {
   bodyClass: BodyClass;
   maxAdjustmentPct: number;
   minimumCalories: number;
+  maximumCalories: number;
   minimumFatPerKg: number;
   minimumCarbPerKg: number;
 };
-
-const BALANCED_PERCENTAGES = {
-  protein: 0.3,
-  fat: 0.25,
-  carbs: 0.45,
-} as const;
 
 const KCAL_PER_KG = 7700;
 const DAYS_PER_WEEK = 7;
@@ -92,6 +87,7 @@ export function getNutritionGuardrails(input: {
               Math.round(input.tmbKcal * 1.1),
               Math.round(input.tdeeKcal * (bodyClass === "obesity" ? 0.75 : 0.8))
             ),
+      maximumCalories: Math.round(input.tdeeKcal * (input.highActivity ? 1.05 : 1.02)),
       minimumFatPerKg: bodyClass === "obesity" ? 0.65 : 0.7,
       minimumCarbPerKg: input.highActivity ? 1.5 : bodyClass === "obesity" ? 1.0 : 1.25,
     };
@@ -119,6 +115,7 @@ export function getNutritionGuardrails(input: {
         Math.round(input.tmbKcal * 1.08),
         Math.round(input.tdeeKcal * 1.03)
       ),
+      maximumCalories: Math.round(input.tdeeKcal * (input.highActivity ? 1.22 : 1.18)),
       minimumFatPerKg: bodyClass === "obesity" ? 0.8 : 0.95,
       minimumCarbPerKg: input.highActivity ? 3 : bodyClass === "obesity" ? 2.0 : 2.4,
     };
@@ -128,6 +125,7 @@ export function getNutritionGuardrails(input: {
     bodyClass,
     maxAdjustmentPct: 0,
     minimumCalories: Math.max(Math.round(input.tmbKcal * 1.05), Math.round(input.tdeeKcal)),
+    maximumCalories: Math.round(input.tdeeKcal * 1.08),
     minimumFatPerKg: 0.8,
     minimumCarbPerKg: input.highActivity ? 2.5 : 1.8,
   };

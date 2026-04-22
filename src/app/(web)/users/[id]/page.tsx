@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { calculateAge } from "@/actions/server/users/onboarding/logic/onboarding-calculator";
 import { loadUserDetailPageState } from "@/actions/server/users/pages";
 import { UserWeeklyPlanCard } from "@/components/users/plans";
 
@@ -15,6 +16,14 @@ function formatDate(value: Date): string {
     month: "2-digit",
     day: "2-digit",
   });
+}
+
+function formatTrainingLabel(value: string | null): string {
+  if (!value) {
+    return "Sin definir";
+  }
+
+  return value.replace(/_/g, " ");
 }
 
 export default async function UserDetailPage({ params }: UserDetailPageProps) {
@@ -56,6 +65,22 @@ export default async function UserDetailPage({ params }: UserDetailPageProps) {
               <dd>{user.nivel_actividad ?? "Sin nivel"}</dd>
             </div>
             <div className="flex justify-between gap-3">
+              <dt className="text-slate-500">Entrenamiento</dt>
+              <dd>{formatTrainingLabel(user.tipo_entrenamiento)}</dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-slate-500">Experiencia</dt>
+              <dd>{formatTrainingLabel(user.nivel_experiencia)}</dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-slate-500">Frecuencia</dt>
+              <dd>{user.frecuencia_entreno ?? 0} dias/semana</dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-slate-500">Anios entrenando</dt>
+              <dd>{user.anos_entrenando ?? 0}</dd>
+            </div>
+            <div className="flex justify-between gap-3">
               <dt className="text-slate-500">Peso actual</dt>
               <dd>{user.peso_kg ? `${user.peso_kg} kg` : "Sin dato"}</dd>
             </div>
@@ -74,7 +99,19 @@ export default async function UserDetailPage({ params }: UserDetailPageProps) {
           </dl>
         </section>
 
-        <UserWeeklyPlanCard plan={user.nutritionPlan} />
+        <UserWeeklyPlanCard
+          plan={user.nutritionPlan}
+          profile={{
+            age: calculateAge(user.fecha_nacimiento),
+            sex: user.sexo,
+            heightCm: user.altura_cm,
+            weightKg: user.peso_kg,
+            targetWeightKg: user.peso_objetivo_kg,
+            trainingType: user.tipo_entrenamiento,
+            frequency: user.frecuencia_entreno,
+            yearsTraining: user.anos_entrenando,
+          }}
+        />
       </div>
     </main>
   );

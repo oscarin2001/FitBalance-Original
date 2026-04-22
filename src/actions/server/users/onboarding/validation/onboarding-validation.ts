@@ -42,6 +42,41 @@ export const metricsSchema = z.object({
   }
 });
 
+export const trainingSchema = z.object({
+  nivelActividad: z.nativeEnum(NivelActividad),
+  tipoEntrenamiento: z.enum(["Musculacion", "Cardio", "Mixto", "No_entrena"]),
+  frecuenciaEntreno: z.number().int().min(0).max(7),
+  anosEntrenando: z.number().min(0).max(60),
+}).superRefine((value, ctx) => {
+  if (value.tipoEntrenamiento === "No_entrena") {
+    if (value.frecuenciaEntreno !== 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["frecuenciaEntreno"],
+        message: "Si no entrenas, la frecuencia debe ser 0.",
+      });
+    }
+
+    if (value.anosEntrenando !== 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["anosEntrenando"],
+        message: "Si no entrenas, los anos entrenando deben ser 0.",
+      });
+    }
+
+    return;
+  }
+
+  if (value.frecuenciaEntreno < 1) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["frecuenciaEntreno"],
+      message: "Ingresa al menos 1 dia por semana.",
+    });
+  }
+});
+
 export const foodSchema = z.object({
   preferencias: z.record(z.string(), z.array(z.string()).max(10)),
   diasDieta: z.array(z.string()).min(1).max(7),

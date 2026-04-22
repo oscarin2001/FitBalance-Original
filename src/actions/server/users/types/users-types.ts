@@ -18,6 +18,13 @@ export type UserNutritionPlan = {
   imc: number | null;
   activityLevel: NivelActividad;
   speed: VelocidadCambio;
+  formulaName: string;
+  tmbKcal: number;
+  gastoTotalKcal: number;
+  walkingFactor: number;
+  trainingFactor: number;
+  ajusteCaloricoPct: number;
+  ajusteCaloricoKcal: number;
   dailyWaterLiters: number;
   targetCalories: number;
   warning: string | null;
@@ -43,6 +50,10 @@ export type UserDetail = {
   peso_kg: number | null;
   objetivo: Objetivo | null;
   nivel_actividad: NivelActividad | null;
+  tipo_entrenamiento: string | null;
+  nivel_experiencia: string | null;
+  frecuencia_entreno: number | null;
+  anos_entrenando: number | null;
   pais: string | null;
   peso_objetivo_kg: number | null;
   velocidad_cambio: VelocidadCambio | null;

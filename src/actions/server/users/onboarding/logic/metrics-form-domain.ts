@@ -19,7 +19,6 @@ export function areMetricsDraftsEqual(left: MetricsDraft, right: MetricsDraft) {
     "pesoKg",
     "pesoObjetivoKg",
     "objetivo",
-    "nivelActividad",
     "velocidadCambio",
   ];
 
@@ -64,7 +63,6 @@ export function getStepIndexFromFieldErrors(errors?: MetricsDraftFieldErrors) {
     "pesoKg",
     "pesoObjetivoKg",
     "objetivo",
-    "nivelActividad",
     "velocidadCambio",
   ];
 
@@ -94,7 +92,7 @@ export function getDraftFieldsForStep(stepIndex: number): Array<keyof MetricsDra
     return ["pesoKg"];
   }
 
-  return ["objetivo", "nivelActividad", "velocidadCambio", "pesoObjetivoKg"];
+  return ["objetivo", "velocidadCambio", "pesoObjetivoKg"];
 }
 
 export function mapDraftFieldToFormField(field: keyof MetricsDraft): keyof MetricsFormValues {

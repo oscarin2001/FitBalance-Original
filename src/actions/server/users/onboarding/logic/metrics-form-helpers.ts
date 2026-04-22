@@ -23,7 +23,7 @@ export type MetricsFormValues = {
   alturaCm: string;
   pesoActual: string;
   objetivo: ObjectiveValue;
-  nivelActividad: Exclude<ActivityValue, "Extremo">;
+  nivelActividad: ActivityValue;
   velocidadCambio: SpeedValue;
   usarObjetivoSugerido: boolean;
   pesoObjetivoManual: string;
@@ -51,15 +51,15 @@ export const ageOptions = Array.from(
 export const metricsSubsteps: MetricsSubstep[] = [
   {
     key: "personal",
-    title: "Datos personales",
+    title: "Perfil",
   },
   {
     key: "measurements",
-    title: "Medidas actuales",
+    title: "Medidas",
   },
   {
     key: "goal",
-    title: "Objetivo y configuracion",
+    title: "Objetivo",
   },
 ];
 
@@ -124,7 +124,7 @@ export function createMetricsFormValues(
     alturaCm: String(displayHeight(draft.alturaCm, heightUnit)),
     pesoActual: String(displayWeight(draft.pesoKg, weightUnit)),
     objetivo: draft.objetivo,
-    nivelActividad: draft.nivelActividad === "Extremo" ? "Activo" : draft.nivelActividad,
+    nivelActividad: draft.nivelActividad,
     velocidadCambio: draft.velocidadCambio,
     usarObjetivoSugerido,
     pesoObjetivoManual: String(
@@ -182,8 +182,8 @@ export function getMetricsStepFields(
   }
 
   return objective === "Mantenimiento"
-    ? ["objetivo", "nivelActividad"]
-    : ["objetivo", "nivelActividad", "velocidadCambio", "usarObjetivoSugerido", "pesoObjetivoManual"];
+    ? ["objetivo"]
+    : ["objetivo", "velocidadCambio", "usarObjetivoSugerido", "pesoObjetivoManual"];
 }
 
 export function getSpeedIndex(speed: SpeedValue) {

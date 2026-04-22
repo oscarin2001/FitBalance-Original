@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { ArrowLeft, ArrowRight, Scale, Target, UserRound } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import {
@@ -15,7 +15,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form } from "@/components/ui/form";
-import { Progress } from "@/components/ui/progress";
 import { GoalStepSection } from "./metrics/goal-step-section";
 import { metricsFormSchema } from "./metrics/metrics-form-schema";
 import { type MetricsStepFormProps } from "./metrics/metrics-step-types";
@@ -30,10 +29,8 @@ export function MetricsStepForm({
   fieldErrors,
   errorMessage,
   submitLabel,
-  backLabel,
   onChange,
   onClearFieldError,
-  onBack,
   onContinue,
 }: MetricsStepFormProps) {
   const [stepIndex, setStepIndex] = useState(0);
@@ -52,7 +49,6 @@ export function MetricsStepForm({
     objective,
     activeStepIndex,
     currentStep,
-    progressValue,
     previewMetrics,
     healthyRange,
     healthyStatus,
@@ -97,18 +93,17 @@ export function MetricsStepForm({
   return (
     <>
       <Card className="mx-auto w-full max-w-2xl rounded-[2rem] border border-white/70 bg-white/90 shadow-[0_35px_90px_-45px_rgba(15,23,42,0.4)] backdrop-blur">
-        <CardHeader className="gap-4 border-b border-slate-200/70 pb-5">
-          <div className="grid gap-3">
-            <div className="flex items-start justify-between gap-3">
-              <div className="grid gap-1">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-                  Paso {activeStepIndex + 1} de {metricsSubsteps.length}
-                </p>
-                <CardTitle className="text-2xl tracking-tight text-slate-950">{currentStep.title}</CardTitle>
-              </div>
-            </div>
-            <Progress value={progressValue} className="h-2.5" />
-          </div>
+        <CardHeader className="gap-2 border-b border-slate-200/70 pb-5">
+          <CardTitle className="flex items-center gap-2 text-2xl tracking-tight text-slate-950">
+            {currentStep.key === "personal" ? (
+              <UserRound className="size-5 text-cyan-700" />
+            ) : currentStep.key === "measurements" ? (
+              <Scale className="size-5 text-cyan-700" />
+            ) : (
+              <Target className="size-5 text-cyan-700" />
+            )}
+            {currentStep.title}
+          </CardTitle>
         </CardHeader>
         <Form {...form}>
           <form
@@ -158,29 +153,27 @@ export function MetricsStepForm({
               ) : null}
               {errorMessage ? <p className="text-sm text-red-600">{errorMessage}</p> : null}
             </CardContent>
-            <CardFooter className="grid grid-cols-2 gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                className="h-12 rounded-2xl"
-                disabled={isPending}
-                onClick={() => {
-                  if (activeStepIndex === 0) {
-                    onBack();
-                  } else {
+            <CardFooter className={activeStepIndex === 0 ? "grid gap-3" : "grid grid-cols-2 gap-3"}>
+              {activeStepIndex > 0 ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-12 rounded-2xl"
+                  disabled={isPending}
+                  onClick={() => {
                     setStepIndex(Math.max(activeStepIndex - 1, 0));
-                  }
-                }}
-              >
-                <ArrowLeft className="size-4" />
-                {activeStepIndex === 0 ? backLabel : "Volver"}
-              </Button>
+                  }}
+                >
+                  <ArrowLeft className="size-4" />
+                  Volver
+                </Button>
+              ) : null}
               <Button
                 type="submit"
                 className="h-12 rounded-2xl"
                 disabled={isPending}
               >
-                {activeStepIndex === metricsSubsteps.length - 1 ? submitLabel : "Continuar"}
+                {isPending ? "Continuando..." : submitLabel}
                 <ArrowRight className="size-4" />
               </Button>
             </CardFooter>

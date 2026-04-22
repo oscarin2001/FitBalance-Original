@@ -3,118 +3,50 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
-import type {
-  FoodsDraft,
-  MetricsDraft,
-  WizardStep,
-} from "@/actions/server/users/onboarding/types/onboarding-ui-types";
+import type { FoodsDraft, MetricsDraft, TrainingDraft, WizardStep } from "@/actions/server/users/onboarding/types/onboarding-ui-types";
 import { onboardingDays } from "@/actions/server/users/onboarding/constants";
 import {
   finalizeOnboardingAction,
   saveOnboardingFoodPreferencesAction,
+  saveOnboardingTrainingAction,
   saveOnboardingMetricsAction,
 } from "@/actions/server/users/onboarding";
 import { FoodsStepForm } from "@/components/users/onboarding/organisms/foods-step-form";
 import { ProgressBanner } from "@/components/users/onboarding/molecules/progress-banner";
 import { MetricsStepForm } from "@/components/users/onboarding/organisms/metrics-step-form";
+import { TrainingStepForm } from "@/components/users/onboarding/organisms/training-step-form";
 import { SummaryStepCard } from "@/components/users/onboarding/organisms/summary-step-card";
+import {
+  validateFoodsDraft,
+  validateMetricsDraft,
+  validateTrainingDraft,
+  type FoodsErrors,
+  type MetricsErrors,
+  type TrainingErrors,
+} from "./steps/validators";
 
 type OnboardingMobileWizardProps = {
-  userName: string;
   initialStep: WizardStep;
   initialMetrics: MetricsDraft;
+  initialTraining: TrainingDraft;
   initialFoods: FoodsDraft;
 };
-
-type MetricsErrors = Partial<Record<keyof MetricsDraft, string>>;
-type FoodsErrors = {
-  preferencias?: string;
-};
-
-const NAME_PATTERN = /^[A-Za-z\u00C0-\u024F' -]+$/;
-
-function validateMetricsDraft(value: MetricsDraft): MetricsErrors {
-  const errors: MetricsErrors = {};
-  const birthDate = new Date(value.fechaNacimiento);
-
-  if (!value.nombre.trim()) {
-    errors.nombre = "Ingresa tu nombre.";
-  } else if (value.nombre.trim().length < 2 || !NAME_PATTERN.test(value.nombre.trim())) {
-    errors.nombre = "Nombre invalido.";
-  }
-
-  if (!value.apellido.trim()) {
-    errors.apellido = "Ingresa tu apellido.";
-  } else if (value.apellido.trim().length < 2 || !NAME_PATTERN.test(value.apellido.trim())) {
-    errors.apellido = "Apellido invalido.";
-  }
-
-  if (!value.fechaNacimiento || Number.isNaN(birthDate.getTime())) {
-    errors.fechaNacimiento = "Selecciona una fecha de nacimiento valida.";
-  } else {
-    const age = Math.max(0, new Date().getFullYear() - birthDate.getFullYear());
-    if (age < 14 || age > 90) {
-      errors.fechaNacimiento = "La edad permitida es entre 14 y 90 anos.";
-    }
-  }
-
-  if (!value.sexo.trim()) {
-    errors.sexo = "Ingresa tu sexo.";
-  }
-
-  if (value.alturaCm < 120 || value.alturaCm > 230) {
-    errors.alturaCm = "Altura valida: 120 a 230 cm.";
-  }
-
-  if (value.pesoKg < 35 || value.pesoKg > 250) {
-    errors.pesoKg = "Peso valido: 35 a 250 kg.";
-  }
-
-  if (value.pesoObjetivoKg < 35 || value.pesoObjetivoKg > 250) {
-    errors.pesoObjetivoKg = "Meta valida: 35 a 250 kg.";
-  }
-
-  if (value.objetivo === "Bajar_grasa" && value.pesoObjetivoKg >= value.pesoKg) {
-    errors.pesoObjetivoKg = "Para bajar grasa, la meta debe ser menor al peso actual.";
-  }
-
-  if (value.objetivo === "Ganar_musculo" && value.pesoObjetivoKg <= value.pesoKg) {
-    errors.pesoObjetivoKg = "Para ganar musculo, la meta debe ser mayor al peso actual.";
-  }
-
-  return errors;
-}
-
-function validateFoodsDraft(value: FoodsDraft): FoodsErrors {
-  const errors: FoodsErrors = {};
-
-  const selectedFoodsCount = Object.values(value.preferencias).reduce(
-    (acc, foods) => acc + foods.length,
-    0
-  );
-
-  if (selectedFoodsCount < 6) {
-    errors.preferencias = "Selecciona al menos 6 alimentos para continuar.";
-  }
-
-  return errors;
-}
-
 export function OnboardingMobileWizard({
-  userName,
   initialStep,
   initialMetrics,
+  initialTraining,
   initialFoods,
 }: OnboardingMobileWizardProps) {
   const router = useRouter();
   const [step, setStep] = useState<WizardStep>(initialStep);
   const [metrics, setMetrics] = useState<MetricsDraft>(initialMetrics);
+  const [training, setTraining] = useState<TrainingDraft>(initialTraining);
   const [foods, setFoods] = useState<FoodsDraft>(initialFoods);
   const [metricsErrors, setMetricsErrors] = useState<MetricsErrors>({});
+  const [trainingErrors, setTrainingErrors] = useState<TrainingErrors>({});
   const [foodsErrors, setFoodsErrors] = useState<FoodsErrors>({});
   const [message, setMessage] = useState<string>("");
   const [isPending, startTransition] = useTransition();
-
   function handleMetricsSubmit(nextMetrics: MetricsDraft) {
     setMetrics(nextMetrics);
     const errors = validateMetricsDraft(nextMetrics);
@@ -135,10 +67,32 @@ export function OnboardingMobileWizard({
       }
 
       setMessage("");
+      setStep("training");
+    });
+  }
+  function handleTrainingSubmit(nextTraining: TrainingDraft) {
+    setTraining(nextTraining);
+    const errors = validateTrainingDraft(nextTraining);
+    if (Object.keys(errors).length > 0) {
+      setTrainingErrors(errors);
+      setMessage("Corrige los campos marcados para continuar.");
+      return;
+    }
+
+    setTrainingErrors({});
+    setMessage("");
+
+    startTransition(async () => {
+      const result = await saveOnboardingTrainingAction(nextTraining);
+      if (!result.ok) {
+        setMessage(result.error ?? "No se pudo guardar entrenamiento.");
+        return;
+      }
+
+      setMessage("");
       setStep("foods");
     });
   }
-
   function handleToggleFood(category: string, food: string) {
     setFoods((prev) => {
       const selectedFoods = prev.preferencias[category] ?? [];
@@ -157,7 +111,6 @@ export function OnboardingMobileWizard({
 
     setFoodsErrors((prev) => ({ ...prev, preferencias: undefined }));
   }
-
   function handleFoodsSubmit() {
     const errors = validateFoodsDraft(foods);
     if (errors.preferencias) {
@@ -183,7 +136,6 @@ export function OnboardingMobileWizard({
       setStep("summary");
     });
   }
-
   function handleFinish() {
     startTransition(async () => {
       const result = await finalizeOnboardingAction();
@@ -192,7 +144,7 @@ export function OnboardingMobileWizard({
         return;
       }
 
-      router.replace("/users");
+      router.replace("/users?pdf=1");
     });
   }
 
@@ -212,7 +164,7 @@ export function OnboardingMobileWizard({
             isPending={isPending}
             fieldErrors={metricsErrors}
             errorMessage={message}
-            submitLabel="Guardar y continuar"
+            submitLabel="Continuar"
             backLabel="Volver"
             onChange={setMetrics}
             onClearFieldError={(field) =>
@@ -223,13 +175,30 @@ export function OnboardingMobileWizard({
           />
         ) : null}
 
+        {step === "training" ? (
+          <TrainingStepForm
+            value={training}
+            isPending={isPending}
+            fieldErrors={trainingErrors}
+            errorMessage={message}
+            submitLabel="Continuar"
+            backLabel="Volver"
+            onChange={setTraining}
+            onClearFieldError={(field) =>
+              setTrainingErrors((prev) => ({ ...prev, [field]: undefined }))
+            }
+            onBack={() => setStep("metrics")}
+            onContinue={handleTrainingSubmit}
+          />
+        ) : null}
+
         {step === "foods" ? (
           <FoodsStepForm
             value={foods}
             isPending={isPending}
             fieldErrors={foodsErrors}
             errorMessage={message}
-            onBack={() => setStep("metrics")}
+            onBack={() => setStep("training")}
             onContinue={handleFoodsSubmit}
             onToggleFood={handleToggleFood}
           />
@@ -238,6 +207,7 @@ export function OnboardingMobileWizard({
         {step === "summary" ? (
           <SummaryStepCard
             metrics={metrics}
+            training={training}
             isPending={isPending}
             errorMessage={message}
             onBack={() => setStep("foods")}

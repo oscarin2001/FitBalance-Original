@@ -3,7 +3,6 @@ import { redirectToLogin, redirectToUsers } from "@/actions/server/users/navigat
 import {
   createEmptyFoodsDraft,
   getAllowedFoodsByCategory,
-  isFoodsDraftComplete,
   onboardingDays,
   requiredFoodCategories,
 } from "@/actions/server/users/onboarding/constants";
@@ -12,15 +11,19 @@ import type {
   FoodsDraft,
   GenderValue,
   MetricsDraft,
+  TrainingDraft,
   WizardStep,
 } from "@/actions/server/users/onboarding/types/onboarding-ui-types";
 import { prisma } from "@/actions/server/users/prisma";
 import { getSuggestedTargetWeightKg } from "@/lib/nutrition/weight-guidance";
+import { normalizeTrainingDraft } from "@/actions/server/users/onboarding/logic/training-form-domain";
+import { isFoodsDraftComplete } from "@/actions/server/users/onboarding/constants/food-selection";
 
 export type OnboardingPageState = {
   userName: string;
   initialStep: WizardStep;
   initialMetrics: MetricsDraft;
+  initialTraining: TrainingDraft;
   initialFoods: FoodsDraft;
 };
 
@@ -67,10 +70,6 @@ function normalizeFoodsDraft(preferenciasRaw: unknown, diasRaw: unknown): FoodsD
 function normalizeActivity(
   value: MetricsDraft["nivelActividad"] | null | undefined
 ): ActivityValue {
-  if (value === "Extremo") {
-    return "Activo";
-  }
-
   return value ?? "Moderado";
 }
 
@@ -82,36 +81,111 @@ function normalizeGender(value: string | null | undefined): GenderValue {
   return "Masculino";
 }
 
-function isMetricsComplete(value: MetricsDraft): boolean {
-  const birthDate = new Date(value.fechaNacimiento);
+type StoredMetricsSnapshot = {
+  nombre: string | null;
+  apellido: string | null;
+  fecha_nacimiento: Date | null;
+  sexo: string | null;
+  altura_cm: number | null;
+  peso_kg: number | null;
+  peso_objetivo_kg: number | null;
+  objetivo: MetricsDraft["objetivo"] | null;
+  nivel_actividad: MetricsDraft["nivelActividad"] | null;
+  velocidad_cambio: MetricsDraft["velocidadCambio"] | null;
+};
+
+type StoredTrainingSnapshot = {
+  nivel_actividad: string | null;
+  tipo_entrenamiento: string | null;
+  frecuencia_entreno: number | null;
+  anos_entrenando: number | null;
+};
+
+function isMetricsComplete(value: StoredMetricsSnapshot): boolean {
+  if (
+    !value.nombre ||
+    !value.apellido ||
+    !value.fecha_nacimiento ||
+    !value.sexo ||
+    !value.altura_cm ||
+    !value.peso_kg ||
+    !value.peso_objetivo_kg ||
+    !value.objetivo ||
+    !value.nivel_actividad ||
+    !value.velocidad_cambio
+  ) {
+    return false;
+  }
+
+  const birthDate = new Date(value.fecha_nacimiento);
 
   return (
     value.nombre.trim().length >= 2 &&
     value.apellido.trim().length >= 2 &&
     !Number.isNaN(birthDate.getTime()) &&
-    value.alturaCm >= 120 &&
-    value.alturaCm <= 230 &&
-    value.pesoKg >= 35 &&
-    value.pesoKg <= 250 &&
-    value.pesoObjetivoKg >= 35 &&
-    value.pesoObjetivoKg <= 250
+    value.altura_cm >= 120 &&
+    value.altura_cm <= 230 &&
+    value.peso_kg >= 35 &&
+    value.peso_kg <= 250 &&
+    value.peso_objetivo_kg >= 35 &&
+    value.peso_objetivo_kg <= 250 &&
+    (value.objetivo !== "Bajar_grasa" || value.peso_objetivo_kg < value.peso_kg) &&
+    (value.objetivo !== "Ganar_musculo" || value.peso_objetivo_kg > value.peso_kg)
   );
 }
 
-function isFoodsComplete(value: FoodsDraft): boolean {
-  return isFoodsDraftComplete(value);
+function isTrainingComplete(value: StoredTrainingSnapshot): boolean {
+  if (
+    !value.nivel_actividad ||
+    !value.tipo_entrenamiento ||
+    value.frecuencia_entreno === null ||
+    value.anos_entrenando === null
+  ) {
+    return false;
+  }
+
+  if (value.tipo_entrenamiento === "No_entrena") {
+    return value.frecuencia_entreno === 0 && value.anos_entrenando === 0;
+  }
+
+  return value.frecuencia_entreno >= 1 && value.frecuencia_entreno <= 7 && value.anos_entrenando >= 0;
 }
 
-function getInitialStep(metrics: MetricsDraft, foods: FoodsDraft, step: string | null): WizardStep {
+function getInitialStep(
+  metrics: StoredMetricsSnapshot,
+  training: StoredTrainingSnapshot,
+  foods: FoodsDraft,
+  step: string | null
+): WizardStep {
   if (!isMetricsComplete(metrics)) {
     return "metrics";
   }
 
-  if (!isFoodsComplete(foods)) {
+  if (step === "training") {
+    return "training";
+  }
+
+  if (step === "foods") {
+    return isTrainingComplete(training) ? "foods" : "training";
+  }
+
+  if (step === "summary") {
+    if (!isTrainingComplete(training)) {
+      return "training";
+    }
+
+    return isFoodsDraftComplete(foods) ? "summary" : "foods";
+  }
+
+  if (!isTrainingComplete(training)) {
+    return "training";
+  }
+
+  if (!isFoodsDraftComplete(foods)) {
     return "foods";
   }
 
-  return step === "summary" ? "summary" : "foods";
+  return "summary";
 }
 
 export async function loadOnboardingPageState(): Promise<OnboardingPageState> {
@@ -134,6 +208,10 @@ export async function loadOnboardingPageState(): Promise<OnboardingPageState> {
       objetivo: true,
       nivel_actividad: true,
       velocidad_cambio: true,
+      tipo_entrenamiento: true,
+      nivel_experiencia: true,
+      frecuencia_entreno: true,
+      anos_entrenando: true,
       onboarding_step: true,
       preferencias_alimentos: true,
       dias_dieta: true,
@@ -164,6 +242,13 @@ export async function loadOnboardingPageState(): Promise<OnboardingPageState> {
     velocidadCambio: userRecord.velocidad_cambio ?? "Moderado",
   };
 
+  const initialTraining = normalizeTrainingDraft({
+    nivel_actividad: userRecord.nivel_actividad,
+    tipo_entrenamiento: userRecord.tipo_entrenamiento,
+    frecuencia_entreno: userRecord.frecuencia_entreno,
+    anos_entrenando: userRecord.anos_entrenando,
+  });
+
   const initialFoods = normalizeFoodsDraft(
     userRecord.preferencias_alimentos,
     userRecord.dias_dieta
@@ -171,8 +256,9 @@ export async function loadOnboardingPageState(): Promise<OnboardingPageState> {
 
   return {
     userName: `${userRecord.nombre} ${userRecord.apellido}`,
-    initialStep: getInitialStep(initialMetrics, initialFoods, userRecord.onboarding_step),
+    initialStep: getInitialStep(userRecord, userRecord, initialFoods, userRecord.onboarding_step),
     initialMetrics,
+    initialTraining,
     initialFoods,
   };
 }

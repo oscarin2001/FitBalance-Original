@@ -12,6 +12,10 @@ export default async function OnboardingSummaryPage() {
     redirect("/users/onboarding/data");
   }
 
+  if (state.initialStep === "training") {
+    redirect("/users/onboarding/training");
+  }
+
   if (state.initialStep === "foods") {
     redirect("/users/onboarding/foods");
   }
@@ -20,6 +24,7 @@ export default async function OnboardingSummaryPage() {
     <OnboardingSummaryRouteStep
       userName={state.userName}
       initialMetrics={state.initialMetrics}
+      initialTraining={state.initialTraining}
     />
   );
 }

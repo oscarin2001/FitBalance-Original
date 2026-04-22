@@ -11,9 +11,8 @@ import {
 import type { ActionResult } from "../validation";
 import { buildActionError } from "../validation";
 
-import {
-  buildNutritionPdfPayload,
-} from "./nutrition-pdf-payload";
+import { buildNutritionPdfPayload } from "@/actions/server/users/dashboard/settings/pdf";
+import { calculateAge } from "./onboarding-calculator";
 import { generateDietPlan } from "./diet-plan-generator";
 import { normalizeSelectedFoods } from "./food-preferences";
 import { persistWeeklyMealPlan } from "./weekly-meal-plan-persistence";
@@ -32,6 +31,10 @@ export async function finalizeOnboardingPlan(sessionUser: SessionAppUser): Promi
         objetivo: true,
         nivel_actividad: true,
         velocidad_cambio: true,
+        tipo_entrenamiento: true,
+        nivel_experiencia: true,
+        frecuencia_entreno: true,
+        anos_entrenando: true,
         preferencias_alimentos: true,
         dias_dieta: true,
         kcal_objetivo: true,
@@ -56,9 +59,13 @@ export async function finalizeOnboardingPlan(sessionUser: SessionAppUser): Promi
       !usuario.peso_objetivo_kg ||
       !usuario.objetivo ||
       !usuario.nivel_actividad ||
-      !usuario.velocidad_cambio
+      !usuario.velocidad_cambio ||
+      !usuario.tipo_entrenamiento ||
+      !usuario.nivel_experiencia ||
+      usuario.frecuencia_entreno === null ||
+      usuario.anos_entrenando === null
     ) {
-      return buildActionError("Completa metricas y objetivo antes de finalizar.");
+      return buildActionError("Completa metricas, entrenamiento y objetivo antes de finalizar.");
     }
 
     const selectedFoodPreferences = normalizeSelectedFoods(usuario.preferencias_alimentos);
@@ -78,6 +85,10 @@ export async function finalizeOnboardingPlan(sessionUser: SessionAppUser): Promi
       objetivo: usuario.objetivo,
       nivelActividad: usuario.nivel_actividad,
       velocidadCambio: usuario.velocidad_cambio,
+      tipoEntrenamiento: usuario.tipo_entrenamiento,
+      nivelExperiencia: usuario.nivel_experiencia,
+      frecuenciaEntreno: usuario.frecuencia_entreno,
+      anosEntrenando: usuario.anos_entrenando,
       kcalObjetivo: usuario.kcal_objetivo,
       proteinasG: usuario.proteinas_g_obj,
       grasasG: usuario.grasas_g_obj,
@@ -92,6 +103,10 @@ export async function finalizeOnboardingPlan(sessionUser: SessionAppUser): Promi
       objetivo: usuario.objetivo,
       nivelActividad: usuario.nivel_actividad,
       velocidadCambio: usuario.velocidad_cambio,
+      tipoEntrenamiento: usuario.tipo_entrenamiento,
+      nivelExperiencia: usuario.nivel_experiencia,
+      frecuenciaEntreno: usuario.frecuencia_entreno,
+      anosEntrenando: usuario.anos_entrenando,
       targets,
       preferencias: selectedFoodPreferences,
       diasDieta: selectedDays,
@@ -107,9 +122,37 @@ export async function finalizeOnboardingPlan(sessionUser: SessionAppUser): Promi
       summary: {
         objetivo: usuario.objetivo,
         imc: usuario.progreso[0]?.imc ?? null,
+        edad: calculateAge(usuario.fecha_nacimiento),
+        sexo: usuario.sexo,
+        alturaCm: usuario.altura_cm,
+        pesoKg: usuario.peso_kg,
+        pesoObjetivoKg: usuario.peso_objetivo_kg,
         nivelActividad: usuario.nivel_actividad,
         velocidadCambio: usuario.velocidad_cambio,
+        tipoEntrenamiento: usuario.tipo_entrenamiento,
+        nivelExperiencia: usuario.nivel_experiencia,
+        frecuenciaEntreno: usuario.frecuencia_entreno,
+        anosEntrenando: usuario.anos_entrenando,
+        formulaName: targets.formulaName,
+        tmbKcal: targets.tmbKcal,
+        gastoTotalKcal: targets.gastoTotalKcal,
+        walkingFactor: targets.walkingFactor,
+        trainingFactor: targets.trainingFactor,
+        ajusteCaloricoPct: targets.ajusteCaloricoPct,
+        ajusteCaloricoKcal: targets.ajusteCaloricoKcal,
+        proteinasG: targets.proteinasG,
+        grasasG: targets.grasasG,
+        carbohidratosG: targets.carbohidratosG,
+        proteinasPct: targets.proteinasPct,
+        grasasPct: targets.grasasPct,
+        carbohidratosPct: targets.carbohidratosPct,
+        aguaBaseLitros: targets.aguaBaseLitros,
+        aguaExtraLitros: targets.aguaExtraLitros,
         aguaLitrosDiarios: targets.aguaLitros,
+        variacionPesoSemanalKg: targets.variacionPesoSemanalKg,
+        variacionPesoMensualKg: targets.variacionPesoMensualKg,
+        correcciones: targets.corrections,
+        advertencias: persistedDiet.warning ? [persistedDiet.warning] : [],
         caloriasObjetivoTotal: targets.kcalObjetivo,
       },
       weeklyPlan: persistedDiet.days,

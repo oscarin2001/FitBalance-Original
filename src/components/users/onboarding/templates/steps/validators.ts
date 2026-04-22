@@ -1,6 +1,7 @@
 import type {
   FoodsDraft,
   MetricsDraft,
+  TrainingDraft,
 } from "@/actions/server/users/onboarding/types/onboarding-ui-types";
 import {
   buildMissingFoodCategoriesMessage,
@@ -8,6 +9,7 @@ import {
 } from "@/actions/server/users/onboarding/constants";
 
 export type MetricsErrors = Partial<Record<keyof MetricsDraft, string>>;
+export type TrainingErrors = Partial<Record<keyof TrainingDraft, string>>;
 export type FoodsErrors = {
   preferencias?: string;
 };
@@ -73,6 +75,40 @@ export function validateFoodsDraft(value: FoodsDraft): FoodsErrors {
 
   if (missingCategories.length > 0) {
     errors.preferencias = buildMissingFoodCategoriesMessage(missingCategories);
+  }
+
+  return errors;
+}
+
+export function validateTrainingDraft(value: TrainingDraft): TrainingErrors {
+  const errors: TrainingErrors = {};
+
+  if (!value.nivelActividad) {
+    errors.nivelActividad = "Selecciona tu movimiento diario.";
+  }
+
+  if (!value.tipoEntrenamiento) {
+    errors.tipoEntrenamiento = "Selecciona un tipo de entrenamiento.";
+  }
+
+  if (value.tipoEntrenamiento === "No_entrena") {
+    if (value.frecuenciaEntreno !== 0) {
+      errors.frecuenciaEntreno = "Si no entrenas, la frecuencia debe ser 0.";
+    }
+
+    if (value.anosEntrenando !== 0) {
+      errors.anosEntrenando = "Si no entrenas, los anos entrenando deben ser 0.";
+    }
+
+    return errors;
+  }
+
+  if (!Number.isInteger(value.frecuenciaEntreno) || value.frecuenciaEntreno < 1 || value.frecuenciaEntreno > 7) {
+    errors.frecuenciaEntreno = "Frecuencia valida: 1 a 7 dias por semana.";
+  }
+
+  if (value.anosEntrenando < 0 || value.anosEntrenando > 60) {
+    errors.anosEntrenando = "Anios validos: 0 a 60.";
   }
 
   return errors;

@@ -1,6 +1,7 @@
 import { requireApiSessionUser } from "@/actions/server/users/auth";
+import { buildNutritionPdfPayload } from "@/actions/server/users/dashboard/settings/pdf";
 import { onboardingDays } from "@/actions/server/users/onboarding/constants";
-import { buildNutritionPdfPayload } from "@/actions/server/users/onboarding/logic/nutrition-pdf-payload";
+import { calculateAge } from "@/actions/server/users/onboarding/logic/onboarding-calculator";
 import { generateDietPlan } from "@/actions/server/users/onboarding/logic/diet-plan-generator";
 import { normalizeSelectedFoods } from "@/actions/server/users/onboarding/logic/food-preferences";
 import { resolveMealPlanTargets } from "@/actions/server/users/onboarding/logic/meal-plan-targets";
@@ -28,6 +29,10 @@ export async function POST() {
         objetivo: true,
         nivel_actividad: true,
         velocidad_cambio: true,
+        tipo_entrenamiento: true,
+        nivel_experiencia: true,
+        frecuencia_entreno: true,
+        anos_entrenando: true,
         preferencias_alimentos: true,
         kcal_objetivo: true,
         proteinas_g_obj: true,
@@ -51,10 +56,14 @@ export async function POST() {
       !user.peso_objetivo_kg ||
       !user.objetivo ||
       !user.nivel_actividad ||
-      !user.velocidad_cambio
+      !user.velocidad_cambio ||
+      !user.tipo_entrenamiento ||
+      !user.nivel_experiencia ||
+      user.frecuencia_entreno === null ||
+      user.anos_entrenando === null
     ) {
       return Response.json(
-        { ok: false, error: "Completa metricas antes de generar dieta." },
+        { ok: false, error: "Completa metricas y entrenamiento antes de generar dieta." },
         { status: 400 }
       );
     }
@@ -68,6 +77,10 @@ export async function POST() {
       objetivo: user.objetivo,
       nivelActividad: user.nivel_actividad,
       velocidadCambio: user.velocidad_cambio,
+      tipoEntrenamiento: user.tipo_entrenamiento,
+      nivelExperiencia: user.nivel_experiencia,
+      frecuenciaEntreno: user.frecuencia_entreno,
+      anosEntrenando: user.anos_entrenando,
       kcalObjetivo: user.kcal_objetivo,
       proteinasG: user.proteinas_g_obj,
       grasasG: user.grasas_g_obj,
@@ -92,9 +105,37 @@ export async function POST() {
       summary: {
         objetivo: user.objetivo,
         imc: user.progreso[0]?.imc ?? null,
+        edad: calculateAge(user.fecha_nacimiento),
+        sexo: user.sexo,
+        alturaCm: user.altura_cm,
+        pesoKg: user.peso_kg,
+        pesoObjetivoKg: user.peso_objetivo_kg,
         nivelActividad: user.nivel_actividad,
         velocidadCambio: user.velocidad_cambio,
+        tipoEntrenamiento: user.tipo_entrenamiento,
+        nivelExperiencia: user.nivel_experiencia,
+        frecuenciaEntreno: user.frecuencia_entreno,
+        anosEntrenando: user.anos_entrenando,
+        formulaName: targets.formulaName,
+        tmbKcal: targets.tmbKcal,
+        gastoTotalKcal: targets.gastoTotalKcal,
+        walkingFactor: targets.walkingFactor,
+        trainingFactor: targets.trainingFactor,
+        ajusteCaloricoPct: targets.ajusteCaloricoPct,
+        ajusteCaloricoKcal: targets.ajusteCaloricoKcal,
+        proteinasG: targets.proteinasG,
+        grasasG: targets.grasasG,
+        carbohidratosG: targets.carbohidratosG,
+        proteinasPct: targets.proteinasPct,
+        grasasPct: targets.grasasPct,
+        carbohidratosPct: targets.carbohidratosPct,
+        aguaBaseLitros: targets.aguaBaseLitros,
+        aguaExtraLitros: targets.aguaExtraLitros,
         aguaLitrosDiarios: targets.aguaLitros,
+        variacionPesoSemanalKg: targets.variacionPesoSemanalKg,
+        variacionPesoMensualKg: targets.variacionPesoMensualKg,
+        correcciones: targets.corrections,
+        advertencias: generation.warning ? [generation.warning] : [],
         caloriasObjetivoTotal: targets.kcalObjetivo,
       },
       weeklyPlan: generation.days,

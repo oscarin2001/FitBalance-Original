@@ -1,5 +1,9 @@
 import { NivelActividad, Objetivo, VelocidadCambio } from "@prisma/client";
-import type { GenderValue } from "./onboarding-ui-types";
+import type {
+  ActivityValue,
+  GenderValue,
+  TrainingTypeValue,
+} from "./onboarding-ui-types";
 
 export type OnboardingMetricsInput = {
   nombre: string;
@@ -14,14 +18,24 @@ export type OnboardingMetricsInput = {
   velocidadCambio: VelocidadCambio;
 };
 
+export type OnboardingTrainingInput = {
+  nivelActividad: ActivityValue;
+  tipoEntrenamiento: TrainingTypeValue;
+  frecuenciaEntreno: number;
+  anosEntrenando: number;
+};
+
 export type OnboardingFoodsInput = {
   preferencias: Record<string, string[]>;
   diasDieta: string[];
 };
 
 export type AiTargets = {
+  formulaName: string;
   tmbKcal: number;
   gastoTotalKcal: number;
+  walkingFactor: number;
+  trainingFactor: number;
   ajusteCaloricoPct: number;
   ajusteCaloricoKcal: number;
   kcalObjetivo: number;
@@ -34,6 +48,9 @@ export type AiTargets = {
   aguaBaseLitros: number;
   aguaExtraLitros: number;
   aguaLitros: number;
+  variacionPesoSemanalKg: number;
+  variacionPesoMensualKg: number;
   etaSemanas: number;
   etaFecha: string;
+  corrections?: string[];
 };

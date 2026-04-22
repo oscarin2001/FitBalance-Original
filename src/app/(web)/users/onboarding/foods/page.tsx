@@ -12,6 +12,14 @@ export default async function OnboardingFoodsPage() {
     redirect("/users/onboarding/data");
   }
 
+  if (state.initialStep === "training") {
+    redirect("/users/onboarding/training");
+  }
+
+  if (state.initialStep === "summary") {
+    redirect("/users/onboarding/summary");
+  }
+
   return (
     <OnboardingFoodsRouteStep
       userName={state.userName}
