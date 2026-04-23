@@ -1,4 +1,4 @@
-import type { ComidaTipo, Objetivo } from "@prisma/client";
+import type { ComidaTipo, Objetivo, Prisma } from "@prisma/client";
 
 import type { SessionAppUser } from "@/actions/server/users/auth";
 import { requireCompletedOnboarding } from "@/actions/server/users/auth";
@@ -18,7 +18,7 @@ import type {
   UserDashboardPlan,
 } from "@/actions/server/users/types";
 import type { MealFoodRole } from "@/actions/server/users/onboarding/types/weekly-meal-plan-types";
-import type { MealPortionTargets } from "@/actions/server/users/dashboard/meal-portions";
+import type { MealPortionSource, MealPortionTargets } from "@/actions/server/users/dashboard/meal-portions";
 
 const mealOrder: ComidaTipo[] = ["Desayuno", "Almuerzo", "Snack", "Cena"];
 
@@ -41,29 +41,6 @@ function addTotals(base: DashboardMacroTotals, extra: DashboardMacroTotals): Das
     carbs: round(base.carbs + extra.carbs),
     fats: round(base.fats + extra.fats),
   };
-}
-
-function buildMealTotals(
-  items: Array<{
-    gramos: number;
-    alimento: {
-      calorias: number | null;
-      proteinas: number | null;
-      carbohidratos: number | null;
-      grasas: number | null;
-    };
-  }>
-): DashboardMacroTotals {
-  return items.reduce<DashboardMacroTotals>((acc, item) => {
-    const ratio = item.gramos > 0 ? item.gramos / 100 : 1;
-
-    return {
-      calories: round(acc.calories + (item.alimento.calorias ?? 0) * ratio),
-      proteins: round(acc.proteins + (item.alimento.proteinas ?? 0) * ratio),
-      carbs: round(acc.carbs + (item.alimento.carbohidratos ?? 0) * ratio),
-      fats: round(acc.fats + (item.alimento.grasas ?? 0) * ratio),
-    };
-  }, emptyTotals());
 }
 
 function isBeverageIngredient(name: string, portionLabel: string, category: string | null) {
@@ -150,32 +127,81 @@ function getOverrideFoods(overrides: unknown): PlanFoodOverride[] | null {
   return foods.filter(isPlanFoodOverride);
 }
 
+function resolveMealFoodRole(role: string | null | undefined): MealFoodRole {
+  if (role === "carb" || role === "fat" || role === "vegetable" || role === "fruit" || role === "infusion") {
+    return role;
+  }
+
+  return "protein";
+}
+
+function buildPortionSourceFromOverride(item: PlanFoodOverride): MealPortionSource {
+  const gramsReference = Number(item.quantity ?? item.gramsReference ?? 0);
+  const safeGramsReference = Number.isFinite(gramsReference) && gramsReference > 0 ? gramsReference : 100;
+  const nutrition = item.nutrition ?? { calories: 0, proteins: 0, carbs: 0, fats: 0 };
+  const ratio = safeGramsReference > 0 ? 100 / safeGramsReference : 1;
+  const role = resolveMealFoodRole(item.role);
+
+  return {
+    name: item.name ?? "Alimento",
+    role,
+    foodId: item.foodId ?? null,
+    baseGramsReference: safeGramsReference,
+    nutritionPer100: {
+      calories: Number((nutrition.calories ?? 0).toFixed(1)) * ratio,
+      proteins: Number((nutrition.proteins ?? 0).toFixed(1)) * ratio,
+      carbs: Number((nutrition.carbs ?? 0).toFixed(1)) * ratio,
+      fats: Number((nutrition.fats ?? 0).toFixed(1)) * ratio,
+    },
+    category: null,
+    isBeverage: Boolean(item.isBeverage) || item.unit === "ml" || role === "infusion",
+  };
+}
+
+function buildMealPortionTargetsFromUser(user: {
+  kcal_objetivo: number | null;
+  proteinas_g_obj: number | null;
+  grasas_g_obj: number | null;
+  carbohidratos_g_obj: number | null;
+}): MealPortionTargets {
+  return {
+    kcalObjetivo: round(user.kcal_objetivo ?? 0),
+    proteinasG: round(user.proteinas_g_obj ?? 0),
+    grasasG: round(user.grasas_g_obj ?? 0),
+    carbohidratosG: round(user.carbohidratos_g_obj ?? 0),
+    proteinasPct:
+      (user.kcal_objetivo ?? 0) > 0 ? Number((((user.proteinas_g_obj ?? 0) * 4 * 100) / (user.kcal_objetivo ?? 1)).toFixed(1)) : 0,
+    grasasPct:
+      (user.kcal_objetivo ?? 0) > 0 ? Number((((user.grasas_g_obj ?? 0) * 9 * 100) / (user.kcal_objetivo ?? 1)).toFixed(1)) : 0,
+    carbohidratosPct:
+      (user.kcal_objetivo ?? 0) > 0 ? Number((((user.carbohidratos_g_obj ?? 0) * 4 * 100) / (user.kcal_objetivo ?? 1)).toFixed(1)) : 0,
+  };
+}
+
+function sumOverrideFoodsNutrition(
+  foods: Array<{ nutrition: Partial<DashboardMacroTotals> | null | undefined }>
+): DashboardMacroTotals {
+  return foods.reduce<DashboardMacroTotals>(
+    (accumulator, food) => ({
+      calories: round(accumulator.calories + Number(food.nutrition?.calories ?? 0)),
+      proteins: round(accumulator.proteins + Number(food.nutrition?.proteins ?? 0)),
+      carbs: round(accumulator.carbs + Number(food.nutrition?.carbs ?? 0)),
+      fats: round(accumulator.fats + Number(food.nutrition?.fats ?? 0)),
+    }),
+    emptyTotals()
+  );
+}
+
+function getFallbackFatBaseGrams(mealType: ComidaTipo): number {
+  return mealType === "Snack" ? 10 : 15;
+}
+
 function buildGeneratedMealIngredients(
   mealType: ComidaTipo,
   targets: MealPortionTargets,
   items: PlanFoodOverride[]
 ): UserDashboardMealIngredient[] {
-  const sources = items.map((item) => {
-    const gramsReference = Number(item.quantity ?? item.gramsReference ?? 0);
-    const safeGramsReference = Number.isFinite(gramsReference) && gramsReference > 0 ? gramsReference : 100;
-    const nutrition = item.nutrition ?? { calories: 0, proteins: 0, carbs: 0, fats: 0 };
-    const ratio = safeGramsReference > 0 ? 100 / safeGramsReference : 1;
-
-    return {
-      name: item.name ?? "Alimento",
-      role: (item.role ?? "protein") as MealFoodRole,
-      foodId: item.foodId ?? null,
-      baseGramsReference: safeGramsReference,
-      nutritionPer100: {
-        calories: Number((nutrition.calories ?? 0).toFixed(1)) * ratio,
-        proteins: Number((nutrition.proteins ?? 0).toFixed(1)) * ratio,
-        carbs: Number((nutrition.carbs ?? 0).toFixed(1)) * ratio,
-        fats: Number((nutrition.fats ?? 0).toFixed(1)) * ratio,
-      },
-      category: null,
-      isBeverage: Boolean(item.isBeverage) || item.unit === "ml" || item.role === "infusion",
-    };
-  });
+  const sources = items.map(buildPortionSourceFromOverride);
 
   return buildTargetMealPortions(mealType, targets, sources).map((item) => ({
     name: item.name,
@@ -246,6 +272,200 @@ function normalizeDateKey(value: string | null | undefined): string | null {
   return toDateKey(parsed);
 }
 
+function normalizeFoodLookup(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+async function resolveFallbackFatFood() {
+  let fatFoods = await prisma.alimento.findMany({
+    where: { categoria_enum: "Grasos" },
+    select: {
+      id: true,
+      nombre: true,
+      calorias: true,
+      proteinas: true,
+      carbohidratos: true,
+      grasas: true,
+      porcion: true,
+      categoria_enum: true,
+      categoria: true,
+    },
+    orderBy: [{ nombre: "asc" }],
+  });
+
+  if (fatFoods.length === 0) {
+    await syncSeedFoodsToDatabase();
+    fatFoods = await prisma.alimento.findMany({
+      where: { categoria_enum: "Grasos" },
+      select: {
+        id: true,
+        nombre: true,
+        calorias: true,
+        proteinas: true,
+        carbohidratos: true,
+        grasas: true,
+        porcion: true,
+        categoria_enum: true,
+        categoria: true,
+      },
+      orderBy: [{ nombre: "asc" }],
+    });
+  }
+
+  if (fatFoods.length === 0) {
+    return null;
+  }
+
+  const preferredFatNames = ["aceite de oliva", "aguacate", "palta", "mantequilla", "mayonesa"];
+
+  for (const preferredName of preferredFatNames) {
+    const matched = fatFoods.find((food) => normalizeFoodLookup(food.nombre) === preferredName);
+
+    if (matched) {
+      return matched;
+    }
+  }
+
+  return fatFoods[0] ?? null;
+}
+
+async function repairGeneratedMealPlansMissingFat(userId: number) {
+  const user = await prisma.usuario.findUnique({
+    where: { id: userId },
+    select: {
+      kcal_objetivo: true,
+      proteinas_g_obj: true,
+      grasas_g_obj: true,
+      carbohidratos_g_obj: true,
+      planes: {
+        orderBy: [{ fecha: "asc" }, { comida_tipo: "asc" }],
+        select: {
+          id: true,
+          recetaId: true,
+          comida_tipo: true,
+          overrides: true,
+        },
+      },
+    },
+  });
+
+  if (!user) {
+    return false;
+  }
+
+  const mealPortionTargets = buildMealPortionTargetsFromUser(user);
+
+  if (mealPortionTargets.grasasG <= 0) {
+    return false;
+  }
+
+  const fallbackFatFood = await resolveFallbackFatFood();
+
+  if (!fallbackFatFood) {
+    return false;
+  }
+
+  const repairs: Array<{
+    planId: number;
+    recipeId: number;
+    foods: ReturnType<typeof buildTargetMealPortions>;
+    overrides: Record<string, unknown>;
+  }> = [];
+
+  for (const plan of user.planes) {
+    const overrideFoods = getOverrideFoods(plan.overrides);
+
+    if (!overrideFoods || overrideFoods.length === 0) {
+      continue;
+    }
+
+    if (!overrideFoods.every((food) => food.foodId != null)) {
+      continue;
+    }
+
+    if (overrideFoods.some((food) => resolveMealFoodRole(food.role) === "fat")) {
+      continue;
+    }
+
+    const sources = overrideFoods.map(buildPortionSourceFromOverride);
+
+    sources.push({
+      name: fallbackFatFood.nombre,
+      role: "fat",
+      foodId: fallbackFatFood.id,
+      baseGramsReference: getFallbackFatBaseGrams(plan.comida_tipo),
+      nutritionPer100: {
+        calories: round(fallbackFatFood.calorias ?? 0),
+        proteins: round(fallbackFatFood.proteinas ?? 0),
+        carbs: round(fallbackFatFood.carbohidratos ?? 0),
+        fats: round(fallbackFatFood.grasas ?? 0),
+      },
+      category: fallbackFatFood.categoria_enum ?? fallbackFatFood.categoria ?? null,
+      isBeverage: (fallbackFatFood.porcion ?? "").toLowerCase().includes("ml"),
+    });
+
+    const rebuiltFoods = buildTargetMealPortions(plan.comida_tipo, mealPortionTargets, sources);
+    const rebuiltMealNutrition = sumOverrideFoodsNutrition(
+      rebuiltFoods.map((food) => ({ nutrition: food.nutrition }))
+    );
+
+    const nextOverrides =
+      typeof plan.overrides === "object" && plan.overrides !== null
+        ? {
+            ...(plan.overrides as Record<string, unknown>),
+            foods: rebuiltFoods,
+            mealNutrition: rebuiltMealNutrition,
+          }
+        : {
+            foods: rebuiltFoods,
+            mealNutrition: rebuiltMealNutrition,
+          };
+
+    repairs.push({
+      planId: plan.id,
+      recipeId: plan.recetaId,
+      foods: rebuiltFoods,
+      overrides: nextOverrides,
+    });
+  }
+
+  if (repairs.length === 0) {
+    return false;
+  }
+
+  await prisma.$transaction(async (tx) => {
+    for (const repair of repairs) {
+      await tx.receta.update({
+        where: { id: repair.recipeId },
+        data: {
+          alimentos: {
+            deleteMany: {},
+            create: repair.foods
+              .filter((food) => food.foodId !== null)
+              .map((food) => ({
+                alimentoId: food.foodId as number,
+                gramos: food.gramsReference,
+              })),
+          },
+        },
+      });
+
+      await tx.planComida.update({
+        where: { id: repair.planId },
+        data: {
+          overrides: repair.overrides as Prisma.InputJsonValue,
+        },
+      });
+    }
+  });
+
+  return true;
+}
+
 function buildDashboardPlan(
   user: {
     nombre: string;
@@ -276,6 +496,16 @@ function buildDashboardPlan(
       receta: {
         nombre: string;
         instrucciones: string | null;
+        esCompartida: boolean;
+        compartidaEn: Date | null;
+        compartidaPor: {
+          nombre: string;
+          apellido: string;
+        } | null;
+        creadaPor: {
+          nombre: string;
+          apellido: string;
+        } | null;
         alimentos: Array<{
           gramos: number;
           alimento: {
@@ -294,15 +524,7 @@ function buildDashboardPlan(
   },
   requestedDateIso?: string | null
 ): UserDashboardPlan | null {
-  const mealPortionTargets: MealPortionTargets = {
-    kcalObjetivo: round(user.kcal_objetivo ?? 0),
-    proteinasPct:
-      (user.kcal_objetivo ?? 0) > 0 ? Number((((user.proteinas_g_obj ?? 0) * 4 * 100) / (user.kcal_objetivo ?? 1)).toFixed(1)) : 0,
-    grasasPct:
-      (user.kcal_objetivo ?? 0) > 0 ? Number((((user.grasas_g_obj ?? 0) * 9 * 100) / (user.kcal_objetivo ?? 1)).toFixed(1)) : 0,
-    carbohidratosPct:
-      (user.kcal_objetivo ?? 0) > 0 ? Number((((user.carbohidratos_g_obj ?? 0) * 4 * 100) / (user.kcal_objetivo ?? 1)).toFixed(1)) : 0,
-  };
+  const mealPortionTargets = buildMealPortionTargetsFromUser(user);
   const mealsByDate = new Map<string, UserDashboardMeal[]>();
   const weekTotals = user.planes.reduce<DashboardMacroTotals>((acc, plan) => {
     const dateKey = toDateKey(plan.fecha);
@@ -338,6 +560,14 @@ function buildDashboardPlan(
       instructions,
       instructionsSource: plan.receta.instrucciones ? "database" : "generated",
       totals,
+      isShared: plan.receta.esCompartida,
+      sharedByName: plan.receta.compartidaPor
+        ? `${plan.receta.compartidaPor.nombre} ${plan.receta.compartidaPor.apellido}`.trim()
+        : null,
+      sharedAtIso: plan.receta.compartidaEn?.toISOString() ?? null,
+      createdByName: plan.receta.creadaPor
+        ? `${plan.receta.creadaPor.nombre} ${plan.receta.creadaPor.apellido}`.trim()
+        : null,
     });
 
     mealsByDate.set(dateKey, currentMeals);
@@ -491,6 +721,20 @@ async function loadDashboardUser(userId: number) {
             select: {
               nombre: true,
               instrucciones: true,
+              esCompartida: true,
+              compartidaEn: true,
+              compartidaPor: {
+                select: {
+                  nombre: true,
+                  apellido: true,
+                },
+              },
+              creadaPor: {
+                select: {
+                  nombre: true,
+                  apellido: true,
+                },
+              },
               alimentos: {
                 select: {
                   gramos: true,
@@ -530,6 +774,8 @@ export async function loadUsersPageState(options?: { requestedDateIso?: string |
   let hasLoadError = false;
 
   try {
+    await repairGeneratedMealPlansMissingFat(sessionUser.userId);
+
     let user = await loadDashboardUser(sessionUser.userId);
 
     if (user) {
@@ -550,4 +796,3 @@ export async function loadUsersPageState(options?: { requestedDateIso?: string |
 
   return { sessionUser, profile, dashboard, hasLoadError };
 }
-

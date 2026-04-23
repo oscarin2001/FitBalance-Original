@@ -107,6 +107,10 @@ export type UserDashboardMeal = {
   instructions: string[];
   instructionsSource: "database" | "generated";
   totals: DashboardMacroTotals;
+  isShared?: boolean;
+  sharedByName?: string | null;
+  sharedAtIso?: string | null;
+  createdByName?: string | null;
 };
 
 export type UserDashboardPlan = {

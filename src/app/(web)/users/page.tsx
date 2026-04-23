@@ -1,4 +1,5 @@
 import { loadUsersPageState } from "@/actions/server/users/pages";
+import { loadDailyLogFoodCatalogAction } from "@/actions/server/users/dashboard/daily-log/food-actions";
 import { DashboardView } from "@/components/users/dashboard";
 
 export const dynamic = "force-dynamic";
@@ -26,6 +27,7 @@ function hasMeaningfulPlan(dashboard: Awaited<ReturnType<typeof loadUsersPageSta
 export default async function UsersPage({ searchParams }: UsersPageProps) {
   const { date } = await searchParams;
   const { sessionUser, profile, dashboard, hasLoadError } = await loadUsersPageState({ requestedDateIso: date });
+  const foodCatalogResult = await loadDailyLogFoodCatalogAction(sessionUser.userId);
 
   if (hasLoadError) {
     return (
@@ -40,6 +42,8 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
     <DashboardView
       userName={profile?.nombre ?? sessionUser.nombre}
       sessionEmail={sessionUser.email}
+      sessionUserId={sessionUser.userId}
+      initialFoods={foodCatalogResult.ok ? foodCatalogResult.foods ?? [] : []}
       profile={profile}
       dashboard={dashboard}
       isPlanPending={!hasMeaningfulPlan(dashboard)}

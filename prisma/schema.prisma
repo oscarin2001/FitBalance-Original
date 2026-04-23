@@ -49,6 +49,11 @@ model Usuario {
   cumplimientos_dieta       CumplimientoDieta[]
   alimentos_seleccion       UsuarioAlimento[]
   bebidas_plan              UsuarioBebida[]
+  alimentos_creados         Alimento[]           @relation("AlimentosCreados")
+  recetas_creadas           Receta[]             @relation("RecetasCreadas")
+  recetas_compartidas        Receta[]             @relation("RecetasCompartidas")
+  entradas_rapidas_creadas  EntradaRapidaCompartida[] @relation("EntradasRapidasCreadas")
+  entradas_rapidas_compartidas EntradaRapidaCompartida[] @relation("EntradasRapidasCompartidas")
   measurement_interval_weeks Int?
   dias_dieta                Json?
 }
@@ -77,6 +82,9 @@ model Alimento {
   grasas          Float?
   porcion         String?
   region          String?
+  esCompartido    Boolean            @default(true)
+  creadaPorId     Int?
+  creadaPor       Usuario?           @relation("AlimentosCreados", fields: [creadaPorId], references: [id], onDelete: SetNull)
   comidas         Comida[]
   recetas         RecetaAlimento[]
   usuarios        UsuarioAlimento[]
@@ -84,14 +92,20 @@ model Alimento {
 }
 
 model Receta {
-  id            Int              @id @default(autoincrement())
-  nombre        String
-  instrucciones String?
-  porciones     Int              @default(1)
-  tipo          ComidaTipo?
-  alimentos     RecetaAlimento[]
-  comidas       Comida[]
-  planes        PlanComida[]
+  id              Int              @id @default(autoincrement())
+  nombre          String
+  instrucciones   String?
+  porciones       Int              @default(1)
+  tipo            ComidaTipo?
+  esCompartida    Boolean          @default(false)
+  compartidaEn    DateTime?
+  creadaPorId     Int?
+  creadaPor       Usuario?         @relation("RecetasCreadas", fields: [creadaPorId], references: [id])
+  compartidaPorId Int?
+  compartidaPor   Usuario?         @relation("RecetasCompartidas", fields: [compartidaPorId], references: [id])
+  alimentos       RecetaAlimento[]
+  comidas         Comida[]
+  planes          PlanComida[]
 }
 
 model RecetaAlimento {
@@ -101,6 +115,30 @@ model RecetaAlimento {
   alimento   Alimento @relation(fields: [alimentoId], references: [id])
   alimentoId Int
   gramos     Float
+}
+
+model EntradaRapidaCompartida {
+  id              Int      @id @default(autoincrement())
+  nombre          String
+  gramos          Float    @default(100)
+  calorias        Float
+  carbs           Float
+  carbMode        String?
+  sugarAlcohols   Float    @default(0)
+  fiber           Float    @default(0)
+  allulose        Float    @default(0)
+  proteins        Float
+  fats            Float
+  glycemicLoad    Float?
+  notes           String?
+  esCompartida    Boolean  @default(true)
+  compartidaEn    DateTime @default(now())
+  creadaPorId     Int
+  creadaPor       Usuario  @relation("EntradasRapidasCreadas", fields: [creadaPorId], references: [id])
+  compartidaPorId Int
+  compartidaPor   Usuario  @relation("EntradasRapidasCompartidas", fields: [compartidaPorId], references: [id])
+
+  @@index([compartidaEn])
 }
 
 model Comida {

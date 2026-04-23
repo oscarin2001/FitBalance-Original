@@ -178,6 +178,26 @@ function sumMealNutrition(foods: PersistedMealFood[]): MealNutritionReference {
   );
 }
 
+function resolveFallbackFatSeedFood(seedFoods: SeedFoodRecord[]) {
+  const fatFoods = seedFoods.filter((food) => food.preferenceCategory === "fats");
+
+  if (fatFoods.length === 0) {
+    return null;
+  }
+
+  const preferredNames = ["Aceite de oliva", "Aguacate", "Palta", "Mantequilla", "Mayonesa"];
+
+  for (const preferredName of preferredNames) {
+    const matched = fatFoods.find((food) => normalizeFoodName(food.name) === normalizeFoodName(preferredName));
+
+    if (matched) {
+      return matched;
+    }
+  }
+
+  return fatFoods[0] ?? null;
+}
+
 export async function persistWeeklyMealPlan(
   input: PersistWeeklyMealPlanInput
 ): Promise<PersistedWeeklyMealPlan> {
@@ -276,6 +296,66 @@ export async function persistWeeklyMealPlan(
             };
           })
         );
+
+        const hasFatSource = foodSources.some((source) => source.role === "fat");
+
+        if (!hasFatSource && input.targets.grasasG > 0) {
+          const fallbackFatSeed = resolveFallbackFatSeedFood(seedFoods);
+
+          if (fallbackFatSeed) {
+            const exactFatFood = foodIndexes.byExactName.get(fallbackFatSeed.name);
+            const normalizedFatFood = foodIndexes.byNormalizedName.get(normalizeFoodName(fallbackFatSeed.name));
+            const resolvedFatFood = exactFatFood ?? normalizedFatFood;
+
+            if (resolvedFatFood) {
+              foodSources.push({
+                name: fallbackFatSeed.name,
+                role: "fat",
+                foodId: resolvedFatFood.id,
+                baseGramsReference: getBasePortionGrams("fat", meal.mealType),
+                nutritionPer100: {
+                  calories: roundNutrition(resolvedFatFood.calorias ?? 0),
+                  proteins: roundNutrition(resolvedFatFood.proteinas ?? 0),
+                  carbs: roundNutrition(resolvedFatFood.carbohidratos ?? 0),
+                  fats: roundNutrition(resolvedFatFood.grasas ?? 0),
+                },
+                category: null,
+                isBeverage: (resolvedFatFood.porcion ?? "").toLowerCase().includes("ml"),
+              });
+            } else {
+              const createdFatFood = await tx.alimento.create({
+                data: buildSeedFoodCreateData(fallbackFatSeed),
+                select: {
+                  id: true,
+                  nombre: true,
+                  calorias: true,
+                  proteinas: true,
+                  carbohidratos: true,
+                  grasas: true,
+                  porcion: true,
+                },
+              });
+
+              foodIndexes.byExactName.set(createdFatFood.nombre, createdFatFood);
+              foodIndexes.byNormalizedName.set(normalizeFoodName(createdFatFood.nombre), createdFatFood);
+
+              foodSources.push({
+                name: fallbackFatSeed.name,
+                role: "fat",
+                foodId: createdFatFood.id,
+                baseGramsReference: getBasePortionGrams("fat", meal.mealType),
+                nutritionPer100: {
+                  calories: roundNutrition(createdFatFood.calorias ?? 0),
+                  proteins: roundNutrition(createdFatFood.proteinas ?? 0),
+                  carbs: roundNutrition(createdFatFood.carbohidratos ?? 0),
+                  fats: roundNutrition(createdFatFood.grasas ?? 0),
+                },
+                category: null,
+                isBeverage: (createdFatFood.porcion ?? "").toLowerCase().includes("ml"),
+              });
+            }
+          }
+        }
 
         const persistedFoods = buildTargetMealPortions(meal.mealType, input.targets, foodSources);
         const nutrition = sumMealNutrition(persistedFoods);

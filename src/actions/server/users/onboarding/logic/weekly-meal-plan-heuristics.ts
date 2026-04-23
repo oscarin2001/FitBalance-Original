@@ -165,16 +165,12 @@ function pickUniqueFood(pool: string[], index: number, usedNames: Set<string>, f
 }
 
 function shouldIncludeFat(objective: Objetivo, speed: VelocidadCambio, mealType: WeeklyMealType, dayIndex: number) {
-  if (objective === Objetivo.Bajar_grasa) {
-    const cadence = speed === VelocidadCambio.Rapido ? 3 : 2;
-    return mealType === "Snack" ? dayIndex % 4 === 0 : dayIndex % cadence === 0;
-  }
+  void objective;
+  void speed;
+  void mealType;
+  void dayIndex;
 
-  if (objective === Objetivo.Ganar_musculo) {
-    return mealType === "Snack" ? true : dayIndex % 2 === 0;
-  }
-
-  return mealType === "Snack" ? dayIndex % 2 === 0 : dayIndex % 3 !== 1;
+  return true;
 }
 
 function buildRecipeName(mealType: WeeklyMealType, foods: VisibleMealPlanFood[]) {

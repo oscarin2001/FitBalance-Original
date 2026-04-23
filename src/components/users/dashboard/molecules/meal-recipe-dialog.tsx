@@ -19,6 +19,23 @@ import {
   formatMacroLine,
 } from "../lib/meal-formatters";
 
+function formatDateLabel(value: string | null | undefined) {
+  if (!value) {
+    return null;
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return new Intl.DateTimeFormat("es-BO", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(date);
+}
+
 type MealRecipeDialogProps = {
   meal: UserDashboardMeal;
   open: boolean;
@@ -38,12 +55,19 @@ export function MealRecipeDialog({ meal, open, onOpenChange }: MealRecipeDialogP
               <Target className="size-3.5" />
               {meal.instructionsSource === "database" ? "Instruccion guardada" : "Preparacion sugerida"}
             </Badge>
+            {meal.isShared && meal.sharedByName ? (
+              <Badge variant="secondary" className="rounded-full">
+                Compartida por {meal.sharedByName}
+              </Badge>
+            ) : null}
           </div>
           <DialogTitle className="text-2xl text-slate-950">{meal.recipeName}</DialogTitle>
           <DialogDescription>
-            {meal.instructionsSource === "database"
-              ? "La receta ya tiene pasos de preparacion almacenados."
-              : "Como aun no habia instrucciones guardadas, te mostramos una propuesta coherente con los ingredientes."}
+            {meal.isShared && meal.sharedByName
+              ? `Receta compartida por ${meal.sharedByName}${formatDateLabel(meal.sharedAtIso) ? ` el ${formatDateLabel(meal.sharedAtIso)}` : ""}.`
+              : meal.instructionsSource === "database"
+                ? "La receta ya tiene pasos de preparacion almacenados."
+                : "Como aun no habia instrucciones guardadas, te mostramos una propuesta coherente con los ingredientes."}
           </DialogDescription>
         </DialogHeader>
 

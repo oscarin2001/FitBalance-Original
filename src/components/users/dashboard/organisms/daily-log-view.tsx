@@ -28,10 +28,12 @@ import {
 
 import {
   deleteDashboardMealIngredientAction,
+  addDashboardMealFoodAction,
   updateDailyComplianceAction,
   updateDailyHydrationAction,
   updateDashboardMealIngredientAction,
 } from "@/actions/server/users/dashboard/daily-log"
+import type { DailyLogFoodOption } from "@/actions/server/users/dashboard/daily-log/types"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -48,6 +50,7 @@ import { Switch } from "@/components/ui/switch"
 import { cn } from "@/lib/utils"
 
 import { IngredientActionsMenu } from "./daily-log/actions/ingredient-actions-menu"
+import { FoodAddDialog, type FoodAddValues } from "./daily-log/dialogs/food-add-dialog"
 import { IngredientEditDialog, type IngredientEditValues } from "./daily-log/dialogs/ingredient-edit-dialog"
 
 export type DailyLogProfile = "deficit" | "superavit" | "mantenimiento" | string
@@ -68,6 +71,9 @@ export type DailyLogIngredient = {
   registeredAt?: string | Date
   thumbnailUrl?: string | null
   thumbnailAlt?: string
+  category?: string | null
+  role?: string | null
+  isBeverage?: boolean
   nutrition?: Partial<DailyLogTotals>
 }
 
@@ -84,6 +90,8 @@ export type DailyLogViewProps = {
   meals: DailyLogMeal[]
   dietProfile?: DailyLogProfile
   targets?: Partial<DailyLogTotals>
+  sessionUserId: number
+  initialFoods: DailyLogFoodOption[]
   selectedDateIso: string
   dailyWaterLiters?: number
   waterConsumedLiters?: number
@@ -1002,6 +1010,8 @@ export function DailyLogView({
   meals,
   dietProfile,
   targets,
+  sessionUserId,
+  initialFoods,
   selectedDateIso,
   dailyWaterLiters = 0,
   waterConsumedLiters = 0,
@@ -1023,6 +1033,10 @@ export function DailyLogView({
     mealTitle: string
     ingredientId: string | number
     ingredient: DailyLogIngredient
+  } | null>(null)
+  const [addingFoodMeal, setAddingFoodMeal] = useState<{
+    mealId: string | number
+    mealTitle: string
   } | null>(null)
 
   useEffect(() => {
@@ -1080,6 +1094,73 @@ export function DailyLogView({
       ingredientId: ingredient.id,
       ingredient,
     })
+  }
+
+  function handleOpenFoodAdder(meal: DailyLogMeal) {
+    setAddingFoodMeal({
+      mealId: meal.id,
+      mealTitle: meal.title,
+    })
+
+    onAddMeal?.(meal)
+  }
+
+  async function handleAddFood(values: FoodAddValues) {
+    if (!addingFoodMeal) {
+      return { ok: false, error: "No encontramos la comida a editar." }
+    }
+
+    const result = await addDashboardMealFoodAction({
+      dateIso: selectedDateIso,
+      mealId: Number(addingFoodMeal.mealId),
+      foodId: values.food.id,
+      quantity: values.quantity,
+      unit: values.unit,
+    })
+
+    if (!result.ok) {
+      return result
+    }
+
+    const quantity = values.quantity
+    const ratio = quantity > 0 ? quantity / 100 : 0
+
+    setVisibleMeals((previousMeals) => {
+      return previousMeals.map((meal) => {
+        if (meal.id !== addingFoodMeal.mealId) {
+          return meal
+        }
+
+        const nextIngredientIndex = meal.ingredients.length
+
+        return {
+          ...meal,
+          ingredients: [
+            ...meal.ingredients,
+            {
+              id: `${meal.id}-${nextIngredientIndex}`,
+              name: values.food.name,
+              grams: quantity,
+              quantityLabel: `${Number.isInteger(quantity) ? String(Math.round(quantity)) : quantity.toFixed(1)} ${values.unit}`,
+              nutrition: {
+                calories: Number((values.food.calories * ratio).toFixed(1)),
+                proteins: Number((values.food.proteins * ratio).toFixed(1)),
+                carbs: Number((values.food.carbs * ratio).toFixed(1)),
+                fats: Number((values.food.fats * ratio).toFixed(1)),
+              },
+              category: values.food.categoryLabel,
+              isBeverage: values.food.isBeverage,
+              role: values.food.categoryEnum ?? null,
+            },
+          ],
+        }
+      })
+    })
+
+    setAddingFoodMeal(null)
+    router.refresh()
+
+    return result
   }
 
   async function handleSaveIngredient(values: IngredientEditValues) {
@@ -1193,7 +1274,7 @@ export function DailyLogView({
                       meal={meal}
                       summaryLabel={summaryLabel}
                       totals={totals}
-                      onAddMeal={onAddMeal}
+                      onAddMeal={handleOpenFoodAdder}
                       onAdvanced={onAdvanced}
                       onMorePress={onMorePress}
                       onClearMeal={(mealItem) => handleClearMeal(mealItem.id)}
@@ -1298,6 +1379,21 @@ export function DailyLogView({
           }
         }}
         onSave={handleSaveIngredient}
+      />
+
+      <FoodAddDialog
+        open={Boolean(addingFoodMeal)}
+        mealTitle={addingFoodMeal?.mealTitle ?? ""}
+        mealId={addingFoodMeal?.mealId ?? ""}
+        currentUserId={sessionUserId}
+        initialFoods={initialFoods}
+        selectedDateIso={selectedDateIso}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) {
+            setAddingFoodMeal(null)
+          }
+        }}
+        onAddFood={handleAddFood}
       />
     </section>
   )

@@ -100,3 +100,26 @@ export const foodSchema = z.object({
 export function buildActionError(message: string): ActionResult {
   return { ok: false, error: message };
 }
+
+export function getSpanishValidationMessage(error: z.ZodError, fallback = "Revisa los campos.") {
+  const issue = error.issues[0];
+
+  if (!issue) {
+    return fallback;
+  }
+
+  switch (issue.code) {
+    case "invalid_type":
+      return "El formato del campo no es válido.";
+    case "too_small":
+      return "El valor es demasiado pequeño.";
+    case "too_big":
+      return "El valor excede el máximo permitido.";
+    case "invalid_format":
+      return "El formato del campo no es válido.";
+    case "custom":
+      return issue.message || fallback;
+    default:
+      return fallback;
+  }
+}

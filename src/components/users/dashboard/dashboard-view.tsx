@@ -10,11 +10,13 @@ import { BottomNavbar, type BottomNavbarTab } from "./bottom-navbar";
 import { DashboardSkeleton } from "./dashboard-skeleton";
 import { DashboardSettingsSidebar } from "./organisms/dashboard-settings-sidebar";
 import { DashboardSummaryCard } from "./organisms/dashboard-summary-card";
+import { CommunityRecipesPanel } from "./organisms/community-recipes-panel";
 import {
   DailyLogView,
   type DailyLogMeal,
   type DailyLogProfile,
 } from "./organisms/daily-log-view";
+import type { DailyLogFoodOption } from "@/actions/server/users/dashboard/daily-log/types";
 import { TopHeader } from "./top-header";
 import { downloadCurrentNutritionPlanPdf } from "./settings/pdf";
 import { DashboardProfileSidebarPanel } from "./settings/profile";
@@ -70,19 +72,28 @@ function getGreetingLabel(hour: number) {
 type DashboardViewProps = {
   userName: string;
   sessionEmail: string;
+  sessionUserId: number;
+  initialFoods: DailyLogFoodOption[];
   profile: UserDashboardProfile | null;
   dashboard: UserDashboardPlan | null;
   isPlanPending: boolean;
 };
 
-export function DashboardView({ userName, sessionEmail, profile, dashboard, isPlanPending }: DashboardViewProps) {
+export function DashboardView({
+  userName,
+  sessionEmail,
+  sessionUserId,
+  initialFoods,
+  profile,
+  dashboard,
+  isPlanPending,
+}: DashboardViewProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const initialTab = useMemo(() => resolveDashboardTab(searchParams.get("tab")), [searchParams]);
   const shouldDownloadPdf = searchParams.get("pdf") === "1";
   const didTriggerPdfDownload = useRef(false);
-  const [range, setRange] = useState<"today" | "week">("today");
   const [activeTab, setActiveTab] = useState<BottomNavbarTab>(initialTab);
   const [profilePanelOpen, setProfilePanelOpen] = useState(false);
   const [desktopGreeting, setDesktopGreeting] = useState("Buenas tardes");
@@ -210,10 +221,8 @@ export function DashboardView({ userName, sessionEmail, profile, dashboard, isPl
 
             <section id="registro" className="scroll-mt-24">
               <DashboardSummaryCard
-                userName={userName}
                 dashboard={dashboard}
-                range={range}
-                onRangeChange={setRange}
+                sessionUserId={sessionUserId}
               />
             </section>
 
@@ -221,6 +230,8 @@ export function DashboardView({ userName, sessionEmail, profile, dashboard, isPl
 
             <section id="comidas" className="scroll-mt-24">
               <DailyLogView
+                sessionUserId={sessionUserId}
+                initialFoods={initialFoods}
                 meals={mapDashboardMeals(dashboard.meals)}
                 dietProfile={resolveDailyLogProfile(dashboard.objective)}
                 targets={dashboard.dayTargets}
@@ -230,6 +241,10 @@ export function DashboardView({ userName, sessionEmail, profile, dashboard, isPl
                 dayCompleted={dashboard.dayCompleted}
                 showHeader={false}
               />
+            </section>
+
+            <section id="comunidad" className="scroll-mt-24 pb-6">
+              <CommunityRecipesPanel />
             </section>
           </div>
         </main>
