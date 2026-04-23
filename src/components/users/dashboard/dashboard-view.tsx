@@ -16,7 +16,8 @@ import {
   type DailyLogProfile,
 } from "./organisms/daily-log-view";
 import { TopHeader } from "./top-header";
-import { downloadNutritionPlanPdf } from "./settings/pdf";
+import { downloadCurrentNutritionPlanPdf } from "./settings/pdf";
+import { DashboardProfileSidebarPanel } from "./settings/profile";
 import { SidebarProvider } from "@/components/ui/sidebar";
 
 function resolveDailyLogProfile(objective: UserDashboardPlan["objective"]): DailyLogProfile {
@@ -47,20 +48,34 @@ function mapDashboardMeals(meals: UserDashboardPlan["meals"]): DailyLogMeal[] {
     ingredients: meal.ingredients.map((ingredient, index) => ({
       id: `${meal.id}-${index}`,
       name: ingredient.name,
+      grams: ingredient.grams,
       quantityLabel: ingredient.portionLabel,
       nutrition: ingredient.nutrition,
     })),
   }))
 }
 
+function getGreetingLabel(hour: number) {
+  if (hour < 12) {
+    return "Buenos días";
+  }
+
+  if (hour < 19) {
+    return "Buenas tardes";
+  }
+
+  return "Buenas noches";
+}
+
 type DashboardViewProps = {
   userName: string;
+  sessionEmail: string;
   profile: UserDashboardProfile | null;
   dashboard: UserDashboardPlan | null;
   isPlanPending: boolean;
 };
 
-export function DashboardView({ userName, profile, dashboard, isPlanPending }: DashboardViewProps) {
+export function DashboardView({ userName, sessionEmail, profile, dashboard, isPlanPending }: DashboardViewProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -69,10 +84,16 @@ export function DashboardView({ userName, profile, dashboard, isPlanPending }: D
   const didTriggerPdfDownload = useRef(false);
   const [range, setRange] = useState<"today" | "week">("today");
   const [activeTab, setActiveTab] = useState<BottomNavbarTab>(initialTab);
+  const [profilePanelOpen, setProfilePanelOpen] = useState(false);
+  const [desktopGreeting, setDesktopGreeting] = useState("Buenas tardes");
 
   useEffect(() => {
     setActiveTab(initialTab);
   }, [initialTab]);
+
+  useEffect(() => {
+    setDesktopGreeting(getGreetingLabel(new Date().getHours()));
+  }, []);
 
   useEffect(() => {
     if (isPlanPending || !dashboard) {
@@ -96,26 +117,11 @@ export function DashboardView({ userName, profile, dashboard, isPlanPending }: D
 
     const runPdfDownload = async () => {
       try {
-        const response = await fetch("/api/users/diet", { method: "POST" });
-        const payload = (await response.json()) as {
-          ok: boolean;
-          data?: {
-            pdfPayload?: {
-              serializedText: string;
-              user: { nombre: string };
-            };
-          };
-          error?: string;
-        };
+        const result = await downloadCurrentNutritionPlanPdf(userName);
 
-        if (!response.ok || !payload.ok || !payload.data?.pdfPayload?.serializedText) {
-          throw new Error(payload.error ?? "No se pudo generar el PDF.");
+        if (!result.ok) {
+          throw new Error(result.error);
         }
-
-        downloadNutritionPlanPdf({
-          userName,
-          serializedText: payload.data.pdfPayload.serializedText,
-        });
 
         const nextParams = new URLSearchParams(searchParams.toString());
         nextParams.delete("pdf");
@@ -152,6 +158,7 @@ export function DashboardView({ userName, profile, dashboard, isPlanPending }: D
       activeTab={activeTab}
       onTabChange={handleTabChange}
       onFabClick={() => router.push("/users/onboarding")}
+      className="lg:hidden"
     />
   );
 
@@ -165,13 +172,19 @@ export function DashboardView({ userName, profile, dashboard, isPlanPending }: D
   }
 
   return (
-    <SidebarProvider defaultOpen={false}>
-      <DashboardSettingsSidebar profile={profile} />
+    <SidebarProvider defaultOpen={true}>
+      <DashboardSettingsSidebar profile={profile} dashboard={dashboard} sessionEmail={sessionEmail} />
+      <DashboardProfileSidebarPanel
+        open={profilePanelOpen}
+        profile={profile}
+        onOpenChange={setProfilePanelOpen}
+      />
       <div className="flex min-w-0 flex-1 flex-col">
         <TopHeader
           userName={userName}
           selectedDateIso={dashboard.selectedDateIso}
           onDateChange={handleDateChange}
+          onAvatarClick={() => setProfilePanelOpen(true)}
         />
 
         <main className="relative min-h-svh overflow-hidden bg-slate-50 pb-44 pt-24">
@@ -180,7 +193,21 @@ export function DashboardView({ userName, profile, dashboard, isPlanPending }: D
             <div className="absolute right-0 top-1/3 size-64 rounded-full bg-teal-200/25 blur-3xl" />
           </div>
 
-          <div className="relative mx-auto grid w-full max-w-md gap-4 p-4 pb-10">
+          <div className="relative mx-auto grid w-full max-w-none gap-4 px-3 pb-10 pt-4 sm:px-4 md:px-6 lg:px-8">
+            <section className="hidden lg:block">
+              <div className="overflow-hidden rounded-[2rem] border border-slate-200/80 bg-white/90 px-6 py-5 shadow-xl shadow-slate-200/50">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-400">
+                  Vista de escritorio
+                </p>
+                <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
+                  Hola, ¡{desktopGreeting}, {userName}!
+                </h2>
+                <p className="mt-2 text-sm font-medium text-teal-600">
+                  🔥 Empieza tu racha hoy para tus macros
+                </p>
+              </div>
+            </section>
+
             <section id="registro" className="scroll-mt-24">
               <DashboardSummaryCard
                 userName={userName}
@@ -197,6 +224,10 @@ export function DashboardView({ userName, profile, dashboard, isPlanPending }: D
                 meals={mapDashboardMeals(dashboard.meals)}
                 dietProfile={resolveDailyLogProfile(dashboard.objective)}
                 targets={dashboard.dayTargets}
+                selectedDateIso={dashboard.selectedDateIso}
+                dailyWaterLiters={dashboard.dailyWaterLiters}
+                waterConsumedLiters={dashboard.waterConsumedLiters}
+                dayCompleted={dashboard.dayCompleted}
                 showHeader={false}
               />
             </section>

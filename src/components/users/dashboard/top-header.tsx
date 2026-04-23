@@ -2,11 +2,12 @@
 
 import { useMemo, useState } from "react";
 
-import { Crown, ChevronLeft, ChevronRight, Settings2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Settings2 } from "lucide-react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useSidebar } from "@/components/ui/sidebar";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   Dialog,
   DialogContent,
@@ -27,6 +28,7 @@ type TopHeaderProps = {
   userName: string;
   selectedDateIso: string;
   onDateChange: (dateIso: string) => void;
+  onAvatarClick?: () => void;
   className?: string;
 };
 
@@ -40,9 +42,10 @@ function getInitials(name: string) {
     .join("");
 }
 
-export function TopHeader({ userName, selectedDateIso, onDateChange, className }: TopHeaderProps) {
+export function TopHeader({ userName, selectedDateIso, onDateChange, onAvatarClick, className }: TopHeaderProps) {
   const [calendarOpen, setCalendarOpen] = useState(false);
   const { toggleSidebar } = useSidebar();
+  const isMobile = useIsMobile();
   const selectedDate = useMemo(() => parseDateKey(selectedDateIso), [selectedDateIso]);
   const initials = useMemo(() => getInitials(userName), [userName]);
   const dateLabel = useMemo(() => formatRelativeDateLabel(selectedDateIso), [selectedDateIso]);
@@ -60,8 +63,15 @@ export function TopHeader({ userName, selectedDateIso, onDateChange, className }
           <button
             type="button"
             className="relative shrink-0"
-            aria-label="Abrir configuraciones"
-            onClick={toggleSidebar}
+            aria-label="Abrir perfil o configuraciones"
+            onClick={() => {
+              if (isMobile || !onAvatarClick) {
+                toggleSidebar();
+                return;
+              }
+
+              onAvatarClick();
+            }}
           >
             <Avatar className="size-11 border border-emerald-200/70 bg-emerald-50 text-emerald-700 shadow-sm">
               <AvatarFallback className="bg-emerald-50 text-[11px] font-semibold tracking-[0.18em] text-emerald-700">
@@ -108,14 +118,6 @@ export function TopHeader({ userName, selectedDateIso, onDateChange, className }
             </div>
           </div>
 
-          <Button
-            type="button"
-            variant="outline"
-            className="h-8 rounded-full border-emerald-200 bg-emerald-50/70 px-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700 shadow-sm hover:bg-emerald-100 hover:text-emerald-800"
-          >
-            <Crown className="size-3.5" />
-            Hazte Premium
-          </Button>
         </div>
       </header>
 

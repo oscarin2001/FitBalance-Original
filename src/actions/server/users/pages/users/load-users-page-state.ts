@@ -8,6 +8,7 @@ import {
   normalizeInstructionSteps,
 } from "@/components/users/dashboard/lib/meal-formatters";
 import { prisma } from "@/actions/server/users/prisma";
+import { buildTargetMealPortions } from "@/actions/server/users/dashboard/meal-portions";
 import { formatRelativeDateLabel, getDateKeyDifference, shiftDateKey, toDateKey } from "@/lib/date-labels";
 import type {
   DashboardMacroTotals,
@@ -16,6 +17,8 @@ import type {
   UserDashboardMeal,
   UserDashboardPlan,
 } from "@/actions/server/users/types";
+import type { MealFoodRole } from "@/actions/server/users/onboarding/types/weekly-meal-plan-types";
+import type { MealPortionTargets } from "@/actions/server/users/dashboard/meal-portions";
 
 const mealOrder: ComidaTipo[] = ["Desayuno", "Almuerzo", "Snack", "Cena"];
 
@@ -118,6 +121,109 @@ function buildMealIngredients(items: Array<{
   });
 }
 
+type PlanFoodOverride = {
+  foodId?: number | null;
+  name?: string;
+  quantity?: number | null;
+  unit?: string | null;
+  quantityLabel?: string | null;
+  gramsReference?: number | null;
+  isBeverage?: boolean | null;
+  role?: string | null;
+  nutrition?: Partial<DashboardMacroTotals> | null;
+};
+
+function isPlanFoodOverride(value: unknown): value is PlanFoodOverride {
+  return typeof value === "object" && value !== null && typeof (value as { name?: unknown }).name === "string";
+}
+
+function getOverrideFoods(overrides: unknown): PlanFoodOverride[] | null {
+  if (typeof overrides !== "object" || overrides === null || !("foods" in overrides)) {
+    return null;
+  }
+
+  const foods = (overrides as { foods?: unknown }).foods;
+  if (!Array.isArray(foods)) {
+    return [];
+  }
+
+  return foods.filter(isPlanFoodOverride);
+}
+
+function buildGeneratedMealIngredients(
+  mealType: ComidaTipo,
+  targets: MealPortionTargets,
+  items: PlanFoodOverride[]
+): UserDashboardMealIngredient[] {
+  const sources = items.map((item) => {
+    const gramsReference = Number(item.quantity ?? item.gramsReference ?? 0);
+    const safeGramsReference = Number.isFinite(gramsReference) && gramsReference > 0 ? gramsReference : 100;
+    const nutrition = item.nutrition ?? { calories: 0, proteins: 0, carbs: 0, fats: 0 };
+    const ratio = safeGramsReference > 0 ? 100 / safeGramsReference : 1;
+
+    return {
+      name: item.name ?? "Alimento",
+      role: (item.role ?? "protein") as MealFoodRole,
+      foodId: item.foodId ?? null,
+      baseGramsReference: safeGramsReference,
+      nutritionPer100: {
+        calories: Number((nutrition.calories ?? 0).toFixed(1)) * ratio,
+        proteins: Number((nutrition.proteins ?? 0).toFixed(1)) * ratio,
+        carbs: Number((nutrition.carbs ?? 0).toFixed(1)) * ratio,
+        fats: Number((nutrition.fats ?? 0).toFixed(1)) * ratio,
+      },
+      category: null,
+      isBeverage: Boolean(item.isBeverage) || item.unit === "ml" || item.role === "infusion",
+    };
+  });
+
+  return buildTargetMealPortions(mealType, targets, sources).map((item) => ({
+    name: item.name,
+    grams: item.gramsReference,
+    portionLabel: item.portionLabel,
+    nutrition: item.nutrition,
+    category: item.category ?? null,
+    isBeverage: item.isBeverage,
+    role: item.role,
+  }));
+}
+
+function buildOverrideMealIngredients(items: PlanFoodOverride[]): UserDashboardMealIngredient[] {
+  return items.map((item) => {
+    const grams = Number(item.quantity ?? item.gramsReference ?? 0);
+    const safeGrams = Number.isFinite(grams) ? grams : 0;
+    const unit = item.unit === "ml" ? "ml" : "g";
+    const portionLabel = item.quantityLabel?.trim() || `${Math.round(safeGrams)} ${unit}`;
+
+    return {
+      name: item.name ?? "Alimento",
+      grams: safeGrams,
+      portionLabel,
+      category: null,
+      isBeverage: Boolean(item.isBeverage) || unit === "ml",
+      role: item.role ?? null,
+      nutrition: {
+        calories: Number(item.nutrition?.calories ?? 0),
+        proteins: Number(item.nutrition?.proteins ?? 0),
+        carbs: Number(item.nutrition?.carbs ?? 0),
+        fats: Number(item.nutrition?.fats ?? 0),
+      },
+    };
+  });
+}
+
+function sumIngredientTotals(ingredients: UserDashboardMealIngredient[]): DashboardMacroTotals {
+  return ingredients.reduce<DashboardMacroTotals>(
+    (accumulator, ingredient) => ({
+      calories: round(accumulator.calories + (ingredient.nutrition.calories ?? 0)),
+      proteins: round(accumulator.proteins + (ingredient.nutrition.proteins ?? 0)),
+      carbs: round(accumulator.carbs + (ingredient.nutrition.carbs ?? 0)),
+      fats: round(accumulator.fats + (ingredient.nutrition.fats ?? 0)),
+    }),
+    emptyTotals()
+  );
+}
+
 function buildIngredientNames(ingredients: UserDashboardMealIngredient[]) {
   return ingredients.map((ingredient) => ingredient.name);
 }
@@ -147,15 +253,26 @@ function buildDashboardPlan(
     fecha_nacimiento: Date;
     sexo: string;
     altura_cm: number | null;
+    agua_litros_obj: number | null;
     objetivo: Objetivo | null;
     kcal_objetivo: number | null;
     proteinas_g_obj: number | null;
     grasas_g_obj: number | null;
     carbohidratos_g_obj: number | null;
+    hidratacion: Array<{
+      fecha: Date;
+      litros: number;
+      completado: boolean;
+    }>;
+    cumplimientos_dieta: Array<{
+      fecha: Date;
+      cumplido: boolean;
+    }>;
     planes: Array<{
       id: number;
       fecha: Date;
       comida_tipo: ComidaTipo;
+      overrides: unknown;
       receta: {
         nombre: string;
         instrucciones: string | null;
@@ -177,12 +294,32 @@ function buildDashboardPlan(
   },
   requestedDateIso?: string | null
 ): UserDashboardPlan | null {
+  const mealPortionTargets: MealPortionTargets = {
+    kcalObjetivo: round(user.kcal_objetivo ?? 0),
+    proteinasPct:
+      (user.kcal_objetivo ?? 0) > 0 ? Number((((user.proteinas_g_obj ?? 0) * 4 * 100) / (user.kcal_objetivo ?? 1)).toFixed(1)) : 0,
+    grasasPct:
+      (user.kcal_objetivo ?? 0) > 0 ? Number((((user.grasas_g_obj ?? 0) * 9 * 100) / (user.kcal_objetivo ?? 1)).toFixed(1)) : 0,
+    carbohidratosPct:
+      (user.kcal_objetivo ?? 0) > 0 ? Number((((user.carbohidratos_g_obj ?? 0) * 4 * 100) / (user.kcal_objetivo ?? 1)).toFixed(1)) : 0,
+  };
   const mealsByDate = new Map<string, UserDashboardMeal[]>();
   const weekTotals = user.planes.reduce<DashboardMacroTotals>((acc, plan) => {
-    const totals = buildMealTotals(plan.receta.alimentos);
     const dateKey = toDateKey(plan.fecha);
     const currentMeals = mealsByDate.get(dateKey) ?? [];
-    const ingredients = buildMealIngredients(plan.receta.alimentos);
+    const overrideFoods = getOverrideFoods(plan.overrides);
+    const hasGeneratedFoodIds = overrideFoods !== null && overrideFoods.length > 0 && overrideFoods.every((food) => food.foodId != null);
+    const ingredients =
+      overrideFoods === null
+        ? buildMealIngredients(plan.receta.alimentos)
+        : hasGeneratedFoodIds
+          ? buildGeneratedMealIngredients(
+              plan.comida_tipo,
+              mealPortionTargets,
+              overrideFoods
+            )
+          : buildOverrideMealIngredients(overrideFoods);
+    const totals = sumIngredientTotals(ingredients);
     const instructions = normalizeInstructionSteps(
       plan.receta.instrucciones,
       buildFallbackMealInstructions({
@@ -204,7 +341,6 @@ function buildDashboardPlan(
     });
 
     mealsByDate.set(dateKey, currentMeals);
-
     return addTotals(acc, totals);
   }, emptyTotals());
 
@@ -219,6 +355,20 @@ function buildDashboardPlan(
         )
       : mealsByDate;
   const selectedDateIso = normalizeDateKey(requestedDateIso) ?? todayKey;
+  const dailyWaterLiters = Number((user.agua_litros_obj ?? 0).toFixed(2));
+  const waterConsumedLiters = Number(
+    user.hidratacion.reduce((accumulator, entry) => {
+      const dateKey = toDateKey(entry.fecha);
+      if (dateKey !== selectedDateIso) {
+        return accumulator;
+      }
+
+      return accumulator + (entry.litros ?? 0);
+    }, 0).toFixed(2)
+  );
+  const dayCompleted = user.cumplimientos_dieta.some((entry) => {
+    return toDateKey(entry.fecha) === selectedDateIso && entry.cumplido;
+  });
 
   const selectedMeals = (normalizedMealsByDate.get(selectedDateIso) ?? []).sort(
     (a, b) => mealOrder.indexOf(a.mealType) - mealOrder.indexOf(b.mealType)
@@ -242,6 +392,9 @@ function buildDashboardPlan(
     selectedDateLabel: formatRelativeDateLabel(selectedDateIso),
     hasPlanForToday: normalizedMealsByDate.has(todayKey),
     periodDays,
+    dailyWaterLiters,
+    waterConsumedLiters,
+    dayCompleted,
     dayTotals,
     dayTargets,
     weekTotals,
@@ -308,17 +461,32 @@ async function loadDashboardUser(userId: number) {
       tipo_entrenamiento: true,
       frecuencia_entreno: true,
       anos_entrenando: true,
+      agua_litros_obj: true,
       objetivo: true,
       kcal_objetivo: true,
       proteinas_g_obj: true,
       grasas_g_obj: true,
       carbohidratos_g_obj: true,
+      hidratacion: {
+        select: {
+          fecha: true,
+          litros: true,
+          completado: true,
+        },
+      },
+      cumplimientos_dieta: {
+        select: {
+          fecha: true,
+          cumplido: true,
+        },
+      },
       planes: {
         orderBy: [{ fecha: "asc" }, { comida_tipo: "asc" }],
         select: {
           id: true,
           fecha: true,
           comida_tipo: true,
+          overrides: true,
           receta: {
             select: {
               nombre: true,

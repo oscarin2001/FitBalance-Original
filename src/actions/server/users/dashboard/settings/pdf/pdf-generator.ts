@@ -19,6 +19,14 @@ type PdfMeal = {
   nutrition?: PdfMacroTotals;
 };
 
+type PdfWeeklyPlanDay = {
+  dayLabel: string;
+  dateIso: string;
+  meals: PdfMeal[];
+};
+
+const WEEKDAY_ORDER = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sabado", "Domingo"] as const;
+
 function round(value: number) {
   return Number(value.toFixed(1));
 }
@@ -48,6 +56,44 @@ function formatPercentBar(value: number) {
 
 function unique(values: string[]) {
   return [...new Set(values.map((value) => value.trim()).filter(Boolean))];
+}
+
+function normalizeWeekdayLabel(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+}
+
+function getWeekdayOrderIndex(value: string) {
+  const normalizedValue = normalizeWeekdayLabel(value);
+
+  return WEEKDAY_ORDER.findIndex((weekday) => normalizeWeekdayLabel(weekday) === normalizedValue);
+}
+
+function sortWeeklyPlanDays(weeklyPlan: BuildNutritionPdfPayloadInput["weeklyPlan"]): PdfWeeklyPlanDay[] {
+  return weeklyPlan
+    .map((day, index) => {
+      const typedDay = day as PdfWeeklyPlanDay;
+
+      return {
+        day: typedDay,
+        index,
+        orderIndex: getWeekdayOrderIndex(typedDay.dayLabel),
+      };
+    })
+    .sort((left, right) => {
+      const leftOrder = left.orderIndex === -1 ? Number.POSITIVE_INFINITY : left.orderIndex;
+      const rightOrder = right.orderIndex === -1 ? Number.POSITIVE_INFINITY : right.orderIndex;
+
+      if (leftOrder !== rightOrder) {
+        return leftOrder - rightOrder;
+      }
+
+      return left.index - right.index;
+    })
+    .map(({ day }) => day);
 }
 
 function getFoodName(food: string | { name: string }) {
@@ -131,6 +177,7 @@ function getObjectiveWarnings(summary: NutritionPdfSummary) {
 }
 
 function buildWeeklyPlanLines(weeklyPlan: BuildNutritionPdfPayloadInput["weeklyPlan"], summary: NutritionPdfSummary) {
+  const orderedWeeklyPlan = sortWeeklyPlanDays(weeklyPlan);
   const dailyTargetTotals: PdfMacroTotals = {
     calories: round(summary.caloriasObjetivoTotal),
     proteins: round(summary.proteinasG),
@@ -138,8 +185,7 @@ function buildWeeklyPlanLines(weeklyPlan: BuildNutritionPdfPayloadInput["weeklyP
     fats: round(summary.grasasG),
   };
 
-  return weeklyPlan.flatMap((day) => {
-    const typedDay = day as { dayLabel: string; dateIso: string; meals: PdfMeal[] };
+  return orderedWeeklyPlan.flatMap((typedDay) => {
     const dayTotals = getDayTotals(typedDay.meals) ?? dailyTargetTotals;
 
     return [
@@ -158,8 +204,8 @@ export function buildNutritionPdfPayload(input: BuildNutritionPdfPayloadInput) {
   const generatedAt = new Date().toISOString();
   const recommendations = unique([getObjectiveHeadline(input.summary), ...(input.summary.recomendaciones ?? []), ...getPracticalRules(input.summary)]);
   const warnings = getObjectiveWarnings(input.summary);
-  const weeklyPlan = input.weeklyPlan.map((day) => {
-    const typedDay = day as { dayLabel: string; dateIso: string; meals: PdfMeal[] };
+  const corrections = unique(input.summary.correcciones ?? []);
+  const weeklyPlan = sortWeeklyPlanDays(input.weeklyPlan).map((typedDay) => {
     const dayTotals = getDayTotals(typedDay.meals);
 
     return {
@@ -193,6 +239,19 @@ export function buildNutritionPdfPayload(input: BuildNutritionPdfPayloadInput) {
     `- Grasas ${formatPercentBar(input.summary.grasasPct)} ${Math.round(input.summary.grasasG)} g`,
     `- Carbohidratos ${formatPercentBar(input.summary.carbohidratosPct)} ${Math.round(input.summary.carbohidratosG)} g`,
     `- Agua calculada: ${formatLiters(input.summary.aguaLitrosDiarios)} por dia`,
+    "",
+    "## Calculo usado",
+    `- Formula basal: ${input.summary.formulaName}`,
+    `- TMB: ${Math.round(input.summary.tmbKcal)} kcal`,
+    `- Movimiento diario: factor x${input.summary.walkingFactor.toFixed(2)}`,
+    `- Entrenamiento: factor x${input.summary.trainingFactor.toFixed(2)}`,
+    `- Gasto total (TDEE): ${Math.round(input.summary.gastoTotalKcal)} kcal`,
+    `- Ajuste por objetivo: ${input.summary.ajusteCaloricoKcal >= 0 ? "+" : ""}${Math.round(input.summary.ajusteCaloricoKcal)} kcal/dia (${input.summary.ajusteCaloricoPct.toFixed(1)}%)`,
+    `- Calorias objetivo: ${Math.round(input.summary.caloriasObjetivoTotal)} kcal`,
+    `- Velocidad elegida: ${formatLabel(input.summary.velocidadCambio)}`,
+    "",
+    "## Correcciones de seguridad",
+    ...(corrections.length > 0 ? corrections.map((item) => `- ${item}`) : ["- No se aplicaron correcciones de seguridad."]),
     "",
     "## Que significa",
     ...recommendations.map((item) => `- ${item}`),

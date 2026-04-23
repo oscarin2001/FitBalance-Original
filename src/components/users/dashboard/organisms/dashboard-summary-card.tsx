@@ -2,12 +2,11 @@
 
 import { useMemo } from "react";
 
-import { Crown, Flame } from "lucide-react";
+import { Flame } from "lucide-react";
 import { Cell, Pie, PieChart, ResponsiveContainer } from "recharts";
 
 import type { UserDashboardPlan } from "@/actions/server/users/types";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -56,10 +55,6 @@ export function DashboardSummaryCard({ userName, dashboard, range, onRangeChange
             <p className="text-sm text-slate-600">Hola, {userName}</p>
             <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Tu Dashboard</h1>
           </div>
-          <Button className="h-9 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 px-4 text-xs font-semibold text-slate-950 hover:from-amber-300 hover:to-orange-400">
-            <Crown className="size-4" />
-            Hazte Premium
-          </Button>
         </header>
 
         <Tabs value={range} onValueChange={(value) => onRangeChange(value as "today" | "week")}>

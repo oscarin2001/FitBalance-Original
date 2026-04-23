@@ -128,6 +128,10 @@ export function FoodsStepForm({
             onToggleFood(currentCategory ?? "", food);
             setStepError("");
           }}
+          onRemoveFood={(food) => {
+            onToggleFood(currentCategory ?? "", food);
+            setStepError("");
+          }}
         />
 
         {stepError ? <p className="text-sm text-amber-700">{stepError}</p> : null}

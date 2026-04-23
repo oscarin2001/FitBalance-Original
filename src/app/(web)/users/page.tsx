@@ -39,6 +39,7 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
   return (
     <DashboardView
       userName={profile?.nombre ?? sessionUser.nombre}
+      sessionEmail={sessionUser.email}
       profile={profile}
       dashboard={dashboard}
       isPlanPending={!hasMeaningfulPlan(dashboard)}

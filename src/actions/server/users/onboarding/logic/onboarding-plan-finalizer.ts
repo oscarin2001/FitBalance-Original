@@ -115,6 +115,7 @@ export async function finalizeOnboardingPlan(sessionUser: SessionAppUser): Promi
       userId: sessionUser.userId,
       objective: usuario.objetivo,
       speed: usuario.velocidad_cambio,
+      targets,
       plan: generatedDiet,
     });
     const nutritionPdfPayload = buildNutritionPdfPayload({

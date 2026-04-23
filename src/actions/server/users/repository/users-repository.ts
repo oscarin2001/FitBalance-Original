@@ -148,6 +148,9 @@ function parseNutritionPlan(planAi: Prisma.JsonValue | null): UserNutritionPlan 
   const pdfPayload = isRecord(planAi.nutritionPdfPayload) ? planAi.nutritionPdfPayload : null;
   const user = pdfPayload && isRecord(pdfPayload.user) ? pdfPayload.user : null;
   const weeklyPlan = pdfPayload && Array.isArray(pdfPayload.weeklyPlan) ? pdfPayload.weeklyPlan : [];
+  const corrections = user && Array.isArray(user.correcciones)
+    ? user.correcciones.filter((value): value is string => typeof value === "string")
+    : [];
 
   if (!pdfPayload || !user || weeklyPlan.length === 0) {
     return null;
@@ -190,6 +193,7 @@ function parseNutritionPlan(planAi: Prisma.JsonValue | null): UserNutritionPlan 
     ajusteCaloricoKcal: getNumber(targets?.ajusteCaloricoKcal) ?? 0,
     dailyWaterLiters: getNumber(user.aguaLitrosDiarios) ?? 0,
     targetCalories: getNumber(user.caloriasObjetivoTotal) ?? 0,
+    corrections: corrections.length > 0 ? corrections : undefined,
     warning: getString(planAi.warning) || null,
     days: normalizeNutritionPlanDays(days),
   };

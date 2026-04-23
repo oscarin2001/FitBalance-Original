@@ -1,9 +1,14 @@
-import { Plus, Search, X } from "lucide-react";
+import { useMemo } from "react";
+
+import { AnimatePresence, motion } from "framer-motion";
+import { Plus, Search } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { FieldError } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+
+import { SwipeableFoodItem } from "./swipeable-food-item";
 
 type CategoryStepSectionProps = {
   categoryKey: string;
@@ -17,6 +22,7 @@ type CategoryStepSectionProps = {
   emptyState?: string;
   onSearchChange: (value: string) => void;
   onToggleFood: (food: string) => void;
+  onRemoveFood: (food: string) => void;
 };
 
 export function CategoryStepSection({
@@ -31,7 +37,13 @@ export function CategoryStepSection({
   emptyState,
   onSearchChange,
   onToggleFood,
+  onRemoveFood,
 }: CategoryStepSectionProps) {
+  const selectedFoodCards = useMemo(
+    () => selectedFoods.map((food) => ({ food, subtitle: title })),
+    [selectedFoods, title]
+  );
+
   return (
     <section className="space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -61,19 +73,35 @@ export function CategoryStepSection({
 
       {selectedFoods.length > 0 ? (
         <div className="grid gap-2">
-          <div className="flex flex-wrap gap-2">
-            {selectedFoods.map((food) => (
-              <button
-                type="button"
-                key={`${categoryKey}-${food}-selected`}
-                onClick={() => onToggleFood(food)}
-                className="inline-flex items-center gap-2 rounded-full bg-cyan-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm shadow-cyan-300/50 transition-transform duration-200 hover:-translate-y-0.5 hover:bg-cyan-700"
-              >
-                <span className="max-w-[14rem] truncate">{food}</span>
-                <X className="size-3.5" />
-              </button>
-            ))}
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-sm font-semibold text-slate-900">Seleccionados</p>
+            <Badge variant="outline" className="border-slate-300 bg-white text-slate-700">
+              {selectedFoods.length}
+            </Badge>
           </div>
+
+          <AnimatePresence initial={false}>
+            <div className="grid gap-2">
+              {selectedFoodCards.map(({ food, subtitle }) => (
+                <motion.div
+                  key={`${categoryKey}-${food}-selected`}
+                  layout
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.98, height: 0, marginTop: 0, marginBottom: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden"
+                >
+                  <SwipeableFoodItem
+                    title={food}
+                    subtitle={subtitle}
+                    copyValue={food}
+                    onDelete={() => onRemoveFood(food)}
+                  />
+                </motion.div>
+              ))}
+            </div>
+          </AnimatePresence>
         </div>
       ) : null}
 

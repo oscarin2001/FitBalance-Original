@@ -27,6 +27,7 @@ export type UserNutritionPlan = {
   ajusteCaloricoKcal: number;
   dailyWaterLiters: number;
   targetCalories: number;
+  corrections?: string[];
   warning: string | null;
   days: UserNutritionPlanDay[];
 };
@@ -93,6 +94,7 @@ export type UserDashboardMealIngredient = {
   portionLabel: string;
   category: string | null;
   isBeverage: boolean;
+  role?: string | null;
   nutrition: DashboardMacroTotals;
 };
 
@@ -114,6 +116,9 @@ export type UserDashboardPlan = {
   selectedDateLabel: string;
   hasPlanForToday: boolean;
   periodDays: number;
+  dailyWaterLiters: number;
+  waterConsumedLiters: number;
+  dayCompleted: boolean;
   dayTotals: DashboardMacroTotals;
   dayTargets: DashboardMacroTotals;
   weekTotals: DashboardMacroTotals;

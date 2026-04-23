@@ -3,7 +3,11 @@
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
-import { updateDashboardProfileAction, type DashboardProfileField, type DashboardProfileUpdateInput } from "@/actions/server/users/dashboard/settings/profile";
+import {
+  updateDashboardProfileAction,
+  type DashboardProfileField,
+  type DashboardProfileUpdateInput,
+} from "@/actions/server/users/dashboard/settings/profile";
 import type { UserDashboardProfile } from "@/actions/server/users/types";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -189,105 +193,147 @@ export function ProfileFieldDialog({ profile, field, open, onOpenChange }: Profi
 
   return (
     <Dialog open={open && !!field} onOpenChange={(nextOpen) => !nextOpen && onOpenChange(false)}>
-      <DialogContent className="w-[calc(100vw-1rem)] max-w-sm rounded-[1.5rem] border border-white/70 bg-white/95 p-4 shadow-2xl">
+      <DialogContent
+        showCloseButton={false}
+        className="!fixed !inset-0 !z-[100] !h-[100dvh] !w-screen !max-w-none !translate-x-0 !translate-y-0 !rounded-none !border-0 !bg-transparent !p-0 !shadow-none"
+      >
         {field ? (
-          <>
-            <DialogHeader className="pr-10">
-              <DialogTitle className="text-2xl text-slate-950">{getFieldTitle(field)}</DialogTitle>
-              <DialogDescription className="text-sm text-slate-500">
-                Ajusta este dato con valores limpios y coherentes.
-              </DialogDescription>
-            </DialogHeader>
+          <div className="relative flex h-full w-full items-center justify-center p-4">
+            <button
+              type="button"
+              aria-label="Cerrar modal de perfil"
+              className="absolute inset-0 cursor-default bg-slate-950/88 backdrop-blur-md"
+              onClick={() => onOpenChange(false)}
+            />
 
-            {field === "sexo" ? (
-              <RadioGroup value={text} onValueChange={setText} className="grid grid-cols-2 gap-2">
-                {(["Masculino", "Femenino"] as const).map((option) => (
-                  <label key={option} className={cn("cursor-pointer rounded-2xl border px-4 py-3 text-sm font-medium transition", text === option ? "border-teal-300 bg-teal-50 text-slate-950" : "border-slate-200 bg-slate-50 text-slate-600") }>
-                    <div className="flex items-center gap-2">
-                      <RadioGroupItem value={option} className="sr-only" />
-                      {option}
-                    </div>
-                  </label>
-                ))}
-              </RadioGroup>
-            ) : null}
+            <div className="relative z-[110] w-[calc(100vw-1rem)] max-w-sm rounded-[1.5rem] border border-white/70 bg-white p-4 shadow-2xl">
+              <DialogHeader className="pr-10">
+                <DialogTitle className="text-2xl text-slate-950">{getFieldTitle(field)}</DialogTitle>
+                <DialogDescription className="text-sm text-slate-500">
+                  Ajusta este dato con valores limpios y coherentes.
+                </DialogDescription>
+              </DialogHeader>
 
-            {field === "tipoEntrenamiento" ? (
-              <Select value={text} onValueChange={(value) => setText(value ?? "")}>
-                <SelectTrigger className="h-12 w-full rounded-2xl border-slate-200 bg-slate-50/70 px-4">
-                  <SelectValue placeholder="Selecciona una opcion" />
-                </SelectTrigger>
-                <SelectContent>
-                  {trainingTypes.map((option) => (
-                    <SelectItem key={option} value={option}>
-                      {option.replace(/_/g, " ")}
-                    </SelectItem>
+              {field === "sexo" ? (
+                <RadioGroup value={text} onValueChange={setText} className="grid grid-cols-2 gap-2">
+                  {(["Masculino", "Femenino"] as const).map((option) => (
+                    <label
+                      key={option}
+                      className={cn(
+                        "cursor-pointer rounded-2xl border px-4 py-3 text-sm font-medium transition",
+                        text === option
+                          ? "border-teal-300 bg-teal-50 text-slate-950"
+                          : "border-slate-200 bg-slate-50 text-slate-600"
+                      )}
+                    >
+                      <div className="flex items-center gap-2">
+                        <RadioGroupItem value={option} className="sr-only" />
+                        {option}
+                      </div>
+                    </label>
                   ))}
-                </SelectContent>
-              </Select>
-            ) : null}
+                </RadioGroup>
+              ) : null}
 
-            {field === "alturaCm" || field === "pesoKg" ? (
-              <div className="grid gap-3">
-                <div className="grid grid-cols-2 gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-                  {field === "alturaCm" ? (["cm", "ft"] as const) : (["kg", "lb"] as const)}
-                  {field === "alturaCm"
-                    ? (["cm", "ft"] as const).map((nextUnit) => (
-                        <button key={nextUnit} type="button" onClick={() => setUnit(nextUnit)} className={cn("rounded-xl py-2 transition", unit === nextUnit ? "bg-white text-slate-950 shadow-sm" : "text-slate-500")}>{nextUnit.toUpperCase()}</button>
-                      ))
-                    : (["kg", "lb"] as const).map((nextUnit) => (
-                        <button key={nextUnit} type="button" onClick={() => setUnit(nextUnit)} className={cn("rounded-xl py-2 transition", unit === nextUnit ? "bg-white text-slate-950 shadow-sm" : "text-slate-500")}>{nextUnit.toUpperCase()}</button>
-                      ))}
-                </div>
+              {field === "tipoEntrenamiento" ? (
+                <Select value={text} onValueChange={(value) => setText(value ?? "")}>
+                  <SelectTrigger className="h-12 w-full rounded-2xl border-slate-200 bg-slate-50/70 px-4">
+                    <SelectValue placeholder="Selecciona una opcion" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {trainingTypes.map((option) => (
+                      <SelectItem key={option} value={option}>
+                        {option.replace(/_/g, " ")}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : null}
 
-                {field === "alturaCm" && unit === "ft" ? (
-                  <div className="grid grid-cols-2 gap-3">
-                    <Input value={feet} onChange={(event) => setFeet(event.target.value.replace(/[^\d]/g, ""))} inputMode="numeric" placeholder="5" className="h-12 rounded-2xl border-slate-200 bg-slate-50/70 px-4" />
-                    <Input value={inches} onChange={(event) => setInches(event.target.value.replace(/[^\d]/g, ""))} inputMode="numeric" placeholder="8" className="h-12 rounded-2xl border-slate-200 bg-slate-50/70 px-4" />
+              {field === "alturaCm" || field === "pesoKg" ? (
+                <div className="grid gap-3">
+                  <div className="grid grid-cols-2 gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                    {(field === "alturaCm" ? ["cm", "ft"] : ["kg", "lb"]).map((nextUnit) => (
+                      <button
+                        key={nextUnit}
+                        type="button"
+                        onClick={() => setUnit(nextUnit as typeof unit)}
+                        className={cn(
+                          "rounded-xl py-2 transition",
+                          unit === nextUnit ? "bg-white text-slate-950 shadow-sm" : "text-slate-500"
+                        )}
+                      >
+                        {nextUnit.toUpperCase()}
+                      </button>
+                    ))}
                   </div>
-                ) : (
-                  <Input
-                    value={text}
-                    onChange={(event) => setText(event.target.value.replace(/[^\d.]/g, ""))}
-                    inputMode="decimal"
-                    placeholder={field === "alturaCm" ? "169" : "202.9"}
-                    min={field === "alturaCm" ? (unit === "cm" ? 120 : 80) : unit === "kg" ? 35 : 77}
-                    max={field === "alturaCm" ? (unit === "cm" ? 230 : 94) : unit === "kg" ? 250 : 551}
-                    step={field === "alturaCm" ? (unit === "cm" ? 0.1 : 1) : 0.1}
-                    className="h-12 rounded-2xl border-slate-200 bg-slate-50/70 px-4"
-                  />
-                )}
+
+                  {field === "alturaCm" && unit === "ft" ? (
+                    <div className="grid grid-cols-2 gap-3">
+                      <Input
+                        value={feet}
+                        onChange={(event) => setFeet(event.target.value.replace(/[^\d]/g, ""))}
+                        inputMode="numeric"
+                        placeholder="5"
+                        className="h-12 rounded-2xl border-slate-200 bg-slate-50/70 px-4"
+                      />
+                      <Input
+                        value={inches}
+                        onChange={(event) => setInches(event.target.value.replace(/[^\d]/g, ""))}
+                        inputMode="numeric"
+                        placeholder="8"
+                        className="h-12 rounded-2xl border-slate-200 bg-slate-50/70 px-4"
+                      />
+                    </div>
+                  ) : (
+                    <Input
+                      value={text}
+                      onChange={(event) => setText(event.target.value.replace(/[^\d.]/g, ""))}
+                      inputMode="decimal"
+                      placeholder={field === "alturaCm" ? "169" : "202.9"}
+                      min={field === "alturaCm" ? (unit === "cm" ? 120 : 80) : unit === "kg" ? 35 : 77}
+                      max={field === "alturaCm" ? (unit === "cm" ? 230 : 94) : unit === "kg" ? 250 : 551}
+                      step={field === "alturaCm" ? (unit === "cm" ? 0.1 : 1) : 0.1}
+                      className="h-12 rounded-2xl border-slate-200 bg-slate-50/70 px-4"
+                    />
+                  )}
+                </div>
+              ) : null}
+
+              {field === "nombre" || field === "apellido" || field === "fechaNacimiento" || field === "frecuenciaEntreno" || field === "anosEntrenando" ? (
+                <Input
+                  type={field === "fechaNacimiento" ? "date" : field === "frecuenciaEntreno" || field === "anosEntrenando" ? "number" : "text"}
+                  value={text}
+                  onChange={(event) => {
+                    const nextValue = field === "nombre" || field === "apellido" ? sanitizeName(event.target.value) : event.target.value;
+                    setText(nextValue);
+                  }}
+                  min={field === "fechaNacimiento" ? "1900-01-01" : field === "frecuenciaEntreno" ? 0 : field === "anosEntrenando" ? 0 : undefined}
+                  max={field === "fechaNacimiento" ? new Date().toISOString().slice(0, 10) : field === "frecuenciaEntreno" ? 7 : field === "anosEntrenando" ? 60 : undefined}
+                  step={field === "frecuenciaEntreno" ? 1 : field === "anosEntrenando" ? 0.5 : undefined}
+                  inputMode={field === "frecuenciaEntreno" || field === "anosEntrenando" ? "numeric" : "text"}
+                  placeholder={field === "fechaNacimiento" ? "2001-06-29" : field === "frecuenciaEntreno" ? "5" : field === "anosEntrenando" ? "2.5" : undefined}
+                  className="h-12 rounded-2xl border-slate-200 bg-slate-50/70 px-4"
+                />
+              ) : null}
+
+              {error ? <p className="text-sm font-medium text-red-600">{error}</p> : null}
+
+              <div className="mt-2 flex gap-2">
+                <Button type="button" variant="outline" className="h-12 flex-1 rounded-2xl border-slate-200" onClick={() => onOpenChange(false)}>
+                  Cancelar
+                </Button>
+                <Button
+                  type="button"
+                  className="h-12 flex-1 rounded-2xl bg-teal-500 text-white hover:bg-teal-600"
+                  onClick={handleSave}
+                  disabled={isPending}
+                >
+                  {isPending ? "Guardando..." : "Confirmar"}
+                </Button>
               </div>
-            ) : null}
-
-            {field === "nombre" || field === "apellido" || field === "fechaNacimiento" || field === "frecuenciaEntreno" || field === "anosEntrenando" ? (
-              <Input
-                type={field === "fechaNacimiento" ? "date" : field === "frecuenciaEntreno" || field === "anosEntrenando" ? "number" : "text"}
-                value={text}
-                onChange={(event) => {
-                  const nextValue = field === "nombre" || field === "apellido" ? sanitizeName(event.target.value) : event.target.value;
-                  setText(nextValue);
-                }}
-                min={field === "fechaNacimiento" ? "1900-01-01" : field === "frecuenciaEntreno" ? 0 : field === "anosEntrenando" ? 0 : undefined}
-                max={field === "fechaNacimiento" ? new Date().toISOString().slice(0, 10) : field === "frecuenciaEntreno" ? 7 : field === "anosEntrenando" ? 60 : undefined}
-                step={field === "frecuenciaEntreno" ? 1 : field === "anosEntrenando" ? 0.5 : undefined}
-                inputMode={field === "frecuenciaEntreno" || field === "anosEntrenando" ? "numeric" : "text"}
-                placeholder={field === "fechaNacimiento" ? "2001-06-29" : field === "frecuenciaEntreno" ? "5" : field === "anosEntrenando" ? "2.5" : undefined}
-                className="h-12 rounded-2xl border-slate-200 bg-slate-50/70 px-4"
-              />
-            ) : null}
-
-            {error ? <p className="text-sm font-medium text-red-600">{error}</p> : null}
-
-            <div className="mt-2 flex gap-2">
-              <Button type="button" variant="outline" className="h-12 flex-1 rounded-2xl border-slate-200" onClick={() => onOpenChange(false)}>
-                Cancelar
-              </Button>
-              <Button type="button" className="h-12 flex-1 rounded-2xl bg-teal-500 text-white hover:bg-teal-600" onClick={handleSave} disabled={isPending}>
-                {isPending ? "Guardando..." : "Confirmar"}
-              </Button>
             </div>
-          </>
+          </div>
         ) : null}
       </DialogContent>
     </Dialog>

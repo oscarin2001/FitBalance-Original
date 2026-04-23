@@ -1,8 +1,10 @@
 import { AlimentoCategoria, Objetivo, VelocidadCambio } from "@prisma/client";
 
+import { buildTargetMealPortions } from "@/actions/server/users/dashboard/meal-portions";
 import { prisma } from "@/actions/server/users/prisma";
 
 import type {
+  AiTargets,
   GeneratedWeeklyMealPlan,
   MealNutritionReference,
   WeeklyMealType,
@@ -20,13 +22,11 @@ type PersistWeeklyMealPlanInput = {
   userId: number;
   objective: Objetivo;
   speed: VelocidadCambio;
+  targets: AiTargets;
   plan: GeneratedWeeklyMealPlan;
 };
 
-function getBasePortionGrams(
-  role: PersistedMealFood["role"],
-  mealType: WeeklyMealType
-) {
+function getBasePortionGrams(role: PersistedMealFood["role"], mealType: WeeklyMealType) {
   switch (role) {
     case "protein":
       return mealType === "Desayuno" || mealType === "Snack" ? 150 : 180;
@@ -45,23 +45,6 @@ function getBasePortionGrams(
     default:
       return 100;
   }
-}
-
-function getPlannedPortion(
-  role: PersistedMealFood["role"],
-  mealType: WeeklyMealType
-) {
-  if (role === "infusion") {
-    return { gramsReference: 250, portionLabel: "250 ml" };
-  }
-
-  const basePortion = getBasePortionGrams(role, mealType);
-  const grams = basePortion;
-
-  return {
-    gramsReference: grams,
-    portionLabel: `${grams} g`,
-  };
 }
 
 function roundNutrition(value: number) {
@@ -229,7 +212,7 @@ export async function persistWeeklyMealPlan(
       const persistedMeals = [];
 
       for (const meal of day.meals) {
-        const persistedFoods = await Promise.all(
+        const foodSources = await Promise.all(
           meal.foods.map(async (food) => {
             const exactFood = foodIndexes.byExactName.get(food.name);
             const normalizedFood = foodIndexes.byNormalizedName.get(normalizeFoodName(food.name));
@@ -246,15 +229,18 @@ export async function persistWeeklyMealPlan(
 
             if (resolvedFood) {
               return {
-                ...food,
+                name: food.name,
+                role: food.role,
                 foodId: resolvedFood.id,
-                ...getPlannedPortion(food.role, meal.mealType),
-                nutrition: {
+                baseGramsReference: getBasePortionGrams(food.role, meal.mealType),
+                nutritionPer100: {
                   calories: roundNutrition(resolvedFood.calorias ?? 0),
                   proteins: roundNutrition(resolvedFood.proteinas ?? 0),
                   carbs: roundNutrition(resolvedFood.carbohidratos ?? 0),
                   fats: roundNutrition(resolvedFood.grasas ?? 0),
                 },
+                category: null,
+                isBeverage: food.role === "infusion" || (resolvedFood.porcion ?? "").toLowerCase().includes("ml"),
               };
             }
 
@@ -263,7 +249,6 @@ export async function persistWeeklyMealPlan(
               select: {
                 id: true,
                 nombre: true,
-                categoria: true,
                 calorias: true,
                 proteinas: true,
                 carbohidratos: true,
@@ -276,20 +261,25 @@ export async function persistWeeklyMealPlan(
             foodIndexes.byNormalizedName.set(normalizeFoodName(createdFood.nombre), createdFood);
 
             return {
-              ...food,
+              name: food.name,
+              role: food.role,
               foodId: createdFood.id,
-              ...getPlannedPortion(food.role, meal.mealType),
-              nutrition: {
+              baseGramsReference: getBasePortionGrams(food.role, meal.mealType),
+              nutritionPer100: {
                 calories: roundNutrition(createdFood.calorias ?? 0),
                 proteins: roundNutrition(createdFood.proteinas ?? 0),
                 carbs: roundNutrition(createdFood.carbohidratos ?? 0),
                 fats: roundNutrition(createdFood.grasas ?? 0),
               },
+              category: null,
+              isBeverage: food.role === "infusion" || (createdFood.porcion ?? "").toLowerCase().includes("ml"),
             };
-          }
-        )
+          })
         );
+
+        const persistedFoods = buildTargetMealPortions(meal.mealType, input.targets, foodSources);
         const nutrition = sumMealNutrition(persistedFoods);
+
         const recipe = await tx.receta.create({
           data: {
             nombre: meal.recipeName,
@@ -314,6 +304,7 @@ export async function persistWeeklyMealPlan(
           },
           select: { id: true },
         });
+
         const planMeal = await tx.planComida.create({
           data: {
             usuarioId: input.userId,

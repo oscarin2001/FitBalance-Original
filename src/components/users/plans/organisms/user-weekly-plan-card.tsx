@@ -59,6 +59,19 @@ export function UserWeeklyPlanCard({ plan, profile }: UserWeeklyPlanCardProps) {
               <span className="font-medium text-amber-800">Nota:</span> {plan.warning}
             </p>
           ) : null}
+          {plan.corrections?.length ? (
+            <div className="md:col-span-2 rounded-2xl border border-emerald-200 bg-emerald-50/70 px-3 py-3 text-emerald-800">
+              <p className="font-medium text-emerald-900">Correcciones aplicadas</p>
+              <ul className="mt-2 space-y-1 text-sm leading-6">
+                {plan.corrections.map((item) => (
+                  <li key={item} className="flex gap-2">
+                    <span className="mt-2 size-1.5 shrink-0 rounded-full bg-emerald-500" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
         </CardContent>
       </Card>
 
