@@ -101,7 +101,7 @@ export function DashboardView({
   }, []);
 
   useEffect(() => {
-    if (isPlanPending || !dashboard) return;
+    if (isPlanPending || !dashboard || activeTab === "metas") return;
 
     const section = document.getElementById(activeTab);
     if (!section) return;
@@ -192,21 +192,37 @@ export function DashboardView({
         />
 
         <main className="relative min-h-svh overflow-hidden bg-slate-50 pb-44 pt-24">
-          <DashboardSummaryCard dashboard={dashboard} sessionUserId={sessionUserId} />
+          {activeTab === "metas" ? (
+            <div id="metas">
+              <GoalsView
+                userName={userName}
+                objective={dashboard.objective}
+                currentWeightKg={resolvedCurrentWeightKg}
+                targetWeightKg={resolvedTargetWeightKg}
+                weightHistory={weightHistory}
+                bodyMeasurements={bodyMeasurements}
+                onAvatarClick={() => setProfilePanelOpen(true)}
+              />
+            </div>
+          ) : (
+            <>
+              <DashboardSummaryCard dashboard={dashboard} sessionUserId={sessionUserId} />
 
-          <DailyLogView
-            sessionUserId={sessionUserId}
-            initialFoods={initialFoods}
-            meals={mapDashboardMeals(dashboard.meals)}
-            weeklyRecipes={dashboard.weeklyRecipes}
-            dietProfile={resolveDailyLogProfile(dashboard.objective)}
-            targets={dashboard.dayTargets}
-            selectedDateIso={dashboard.selectedDateIso}
-            dailyWaterLiters={dashboard.dailyWaterLiters}
-            waterConsumedLiters={dashboard.waterConsumedLiters}
-            dayCompleted={dashboard.dayCompleted}
-            showHeader={false}
-          />
+              <DailyLogView
+                sessionUserId={sessionUserId}
+                initialFoods={initialFoods}
+                meals={mapDashboardMeals(dashboard.meals)}
+                weeklyRecipes={dashboard.weeklyRecipes}
+                dietProfile={resolveDailyLogProfile(dashboard.objective)}
+                targets={dashboard.dayTargets}
+                selectedDateIso={dashboard.selectedDateIso}
+                dailyWaterLiters={dashboard.dailyWaterLiters}
+                waterConsumedLiters={dashboard.waterConsumedLiters}
+                dayCompleted={dashboard.dayCompleted}
+                showHeader={false}
+              />
+            </>
+          )}
         </main>
 
         {bottomNavbar}
