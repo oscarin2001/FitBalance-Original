@@ -188,10 +188,12 @@ function getInitialStep(
   return "summary";
 }
 
-export async function loadOnboardingPageState(): Promise<OnboardingPageState> {
+export async function loadOnboardingPageState(
+  { allowEditingOnCompleted = false }: { allowEditingOnCompleted?: boolean } = {}
+): Promise<OnboardingPageState> {
   const sessionUser = await requireSessionAppUser();
 
-  if (sessionUser.onboardingCompleted) {
+  if (sessionUser.onboardingCompleted && !allowEditingOnCompleted) {
     redirectToUsers();
   }
 

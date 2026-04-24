@@ -58,7 +58,7 @@ export function TrainingActivitySection({ value, fieldErrors, onChange, onClearF
               className={cn(
                 "grid cursor-pointer gap-3 rounded-2xl border bg-white p-4 transition-all",
                 selected
-                  ? "border-cyan-300 bg-cyan-50/80 shadow-sm shadow-cyan-100"
+                  ? "border-emerald-300 bg-emerald-50/80 shadow-sm shadow-emerald-100"
                   : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
               )}
             >
@@ -67,7 +67,7 @@ export function TrainingActivitySection({ value, fieldErrors, onChange, onClearF
                   <RadioGroupItem value={option.value} className="sr-only" />
                   <span className="font-semibold text-slate-950">{option.label}</span>
                 </div>
-                {selected ? <Check className="size-4 text-cyan-600" /> : null}
+                {selected ? <Check className="size-4 text-emerald-600" /> : null}
               </div>
             </label>
           );
@@ -118,7 +118,7 @@ export function TrainingTypeSection({ value, fieldErrors, onChange, onClearField
               className={cn(
                 "grid cursor-pointer gap-3 rounded-2xl border bg-white p-4 transition-all",
                 selected
-                  ? "border-cyan-300 bg-cyan-50/80 shadow-sm shadow-cyan-100"
+                  ? "border-emerald-300 bg-emerald-50/80 shadow-sm shadow-emerald-100"
                   : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
               )}
             >
@@ -126,11 +126,11 @@ export function TrainingTypeSection({ value, fieldErrors, onChange, onClearField
                 <div className="flex items-start gap-3">
                   <RadioGroupItem value={option.value} className="mt-1 shrink-0" />
                   <span className="flex items-center gap-2 font-semibold text-slate-950">
-                    <Icon className="size-4 text-cyan-600" />
+                    <Icon className="size-4 text-emerald-600" />
                     {option.label}
                   </span>
                 </div>
-                {selected ? <Check className="size-4 text-cyan-600" /> : null}
+                {selected ? <Check className="size-4 text-emerald-600" /> : null}
               </div>
             </label>
           );
@@ -175,7 +175,7 @@ export function TrainingNumbersSection({ value, fieldErrors, onChange, onClearFi
                 className={cn(
                   "grid cursor-pointer gap-3 rounded-2xl border bg-white p-4 transition-all",
                   selected
-                    ? "border-cyan-300 bg-cyan-50/80 shadow-sm shadow-cyan-100"
+                  ? "border-emerald-300 bg-emerald-50/80 shadow-sm shadow-emerald-100"
                     : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
                 )}
               >
@@ -184,7 +184,7 @@ export function TrainingNumbersSection({ value, fieldErrors, onChange, onClearFi
                     <RadioGroupItem value={String(option.value)} className="sr-only" />
                     <span className="font-semibold text-slate-950">{option.label}</span>
                   </div>
-                  {selected ? <Check className="size-4 text-cyan-600" /> : null}
+                  {selected ? <Check className="size-4 text-emerald-600" /> : null}
                 </div>
               </label>
             );

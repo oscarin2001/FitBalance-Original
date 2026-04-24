@@ -100,7 +100,7 @@ export function FoodsStepForm({
     <Card className="mx-auto w-full max-w-3xl rounded-[1.75rem] border-0 bg-white shadow-[0_24px_64px_-30px_rgba(15,23,42,0.45)]">
       <CardHeader className="space-y-3 pb-3">
         <CardTitle className="flex items-center gap-2 text-2xl tracking-tight text-slate-900">
-          <ShoppingBasket className="size-5 text-cyan-700" />
+          <ShoppingBasket className="size-5 text-emerald-700" />
           Preferencias de alimentos
         </CardTitle>
       </CardHeader>
@@ -137,11 +137,20 @@ export function FoodsStepForm({
         {stepError ? <p className="text-sm text-amber-700">{stepError}</p> : null}
 
         <div className="grid grid-cols-2 gap-3">
-          <Button variant="outline" onClick={handlePrevious} className="h-11 rounded-xl" disabled={isPending}>
+          <Button
+            variant="outline"
+            onClick={handlePrevious}
+            className="h-11 rounded-xl border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800"
+            disabled={isPending}
+          >
             <ArrowLeft className="size-4" />
             {activeStepIndex === 0 ? "Volver" : "Anterior"}
           </Button>
-          <Button onClick={handleNext} className="h-11 rounded-xl" disabled={isPending}>
+          <Button
+            onClick={handleNext}
+            className="h-11 rounded-xl bg-emerald-500 text-white shadow-[0_18px_30px_-20px_rgba(16,185,129,0.95)] hover:bg-emerald-600"
+            disabled={isPending}
+          >
             {isPending ? "Continuando..." : "Continuar"}
             <ArrowRight className="size-4" />
           </Button>

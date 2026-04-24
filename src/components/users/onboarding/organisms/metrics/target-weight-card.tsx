@@ -28,7 +28,7 @@ export function TargetWeightCard({
     <div className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50/85 p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2">
-          <Target className="size-4 text-cyan-700" />
+          <Target className="size-4 text-emerald-700" />
           <span className="font-medium text-slate-950">
             {objective === "Mantenimiento" ? "Peso de referencia" : "Peso objetivo"}
           </span>
@@ -39,7 +39,7 @@ export function TargetWeightCard({
             type="button"
             variant="outline"
             size="sm"
-            className="rounded-2xl border-slate-300 bg-white text-slate-800 shadow-sm hover:bg-slate-50"
+            className="rounded-2xl border-emerald-200 bg-emerald-50 text-emerald-700 shadow-sm hover:bg-emerald-100 hover:text-emerald-800"
             onClick={onOpenTargetEditor}
           >
             <PencilLine className="size-4" />

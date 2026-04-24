@@ -88,7 +88,7 @@ export function SummaryProfileCard({
     <section className="grid gap-4">
       <div className="flex items-center justify-between gap-3">
         <p className="text-xs font-medium uppercase tracking-[0.14em] text-slate-500">Tu perfil</p>
-        <p className="inline-flex items-center rounded-full bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-800 ring-1 ring-sky-200">
+        <p className="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800 ring-1 ring-emerald-200">
           Ritmo elegido: {speedTitle}
         </p>
       </div>
@@ -172,7 +172,7 @@ export function SummaryTermsDialog({
     <>
       <Button
         variant="outline"
-        className="w-full justify-between rounded-xl"
+        className="w-full justify-between rounded-xl border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800"
         onClick={() => handleOpenChange(true)}
         disabled={disabled}
       >
@@ -212,10 +212,10 @@ export function SummaryTermsDialog({
           </div>
 
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <Button variant="outline" onClick={() => setOpen(false)}>
+            <Button variant="outline" className="border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800" onClick={() => setOpen(false)}>
               Cancelar
             </Button>
-            <Button onClick={handleConfirm} disabled={!checked}>
+            <Button onClick={handleConfirm} className="bg-emerald-500 text-white shadow-[0_18px_30px_-20px_rgba(16,185,129,0.95)] hover:bg-emerald-600" disabled={!checked}>
               Aceptar y continuar
             </Button>
           </div>

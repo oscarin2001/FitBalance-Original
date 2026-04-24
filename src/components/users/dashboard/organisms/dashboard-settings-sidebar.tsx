@@ -6,11 +6,13 @@ import {
   Beaker,
   Bell,
   Calculator,
+  ClipboardCheck,
   ChefHat,
   ChevronRight,
   CircleHelp,
   Clock3,
   Crown,
+  Dumbbell,
   FileText,
   Flame,
   Globe,
@@ -19,6 +21,7 @@ import {
   Settings2,
   ShieldCheck,
   Sparkles,
+  ShoppingBasket,
   UserRound,
   X,
 } from "lucide-react";
@@ -28,6 +31,7 @@ import type { UserDashboardProfile } from "@/actions/server/users/types";
 import type { UserDashboardPlan } from "@/actions/server/users/types";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 import {
   Sidebar,
   SidebarContent,
@@ -73,10 +77,17 @@ type SidebarEntry = {
     | "health"
     | "support"
     | "terms"
-    | "privacy";
+    | "privacy"
+    | "onboarding"
+    | "training"
+    | "foods"
+    | "summary";
 };
 
-type NestedSettingsScreen = NonNullable<SidebarEntry["action"]>;
+type NestedSettingsScreen = Exclude<
+  NonNullable<SidebarEntry["action"]>,
+  "onboarding" | "training" | "foods" | "summary"
+>;
 
 const settingsItems: SidebarEntry[] = [
   { title: "Mi perfil", icon: UserRound, action: "profile" },
@@ -88,7 +99,10 @@ const settingsItems: SidebarEntry[] = [
 ];
 
 const goalsItems: SidebarEntry[] = [
-  { title: "Primeros pasos", icon: Sparkles },
+  { title: "Primeros pasos", icon: Sparkles, action: "onboarding" },
+  { title: "Entrenamiento", icon: Dumbbell, action: "training" },
+  { title: "Preferencias de comida", icon: ShoppingBasket, action: "foods" },
+  { title: "Resumen final", icon: ClipboardCheck, action: "summary" },
   { title: "Calculadora de macros", icon: Calculator, action: "macros" },
   { title: "Macronutrientes y energía", icon: Flame, action: "energy" },
   { title: "Micronutriente", icon: Beaker, premium: true },
@@ -201,6 +215,7 @@ export function DashboardSettingsSidebar({
   sessionEmail: string;
 }) {
   const { open, openMobile, isMobile, setOpen, setOpenMobile } = useSidebar();
+  const router = useRouter();
   const [profileOpen, setProfileOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const [applicationOpen, setApplicationOpen] = useState(false);
@@ -221,6 +236,7 @@ export function DashboardSettingsSidebar({
     sexo: "No especificado",
     alturaCm: null,
     pesoKg: null,
+    pesoObjetivoKg: null,
     tipoEntrenamiento: null,
     frecuenciaEntreno: null,
     anosEntrenando: null,
@@ -252,6 +268,34 @@ export function DashboardSettingsSidebar({
       return undefined;
     }
 
+    if (action === "onboarding") {
+      return () => {
+        closeSidebar();
+        router.push("/users/onboarding/data?edit=metrics");
+      };
+    }
+
+    if (action === "training") {
+      return () => {
+        closeSidebar();
+        router.push("/users/onboarding/training?edit=training");
+      };
+    }
+
+    if (action === "foods") {
+      return () => {
+        closeSidebar();
+        router.push("/users/onboarding/foods?edit=foods");
+      };
+    }
+
+    if (action === "summary") {
+      return () => {
+        closeSidebar();
+        router.push("/users/onboarding/summary?edit=summary");
+      };
+    }
+
     return () => openNestedScreen(action);
   }
 
@@ -272,17 +316,21 @@ export function DashboardSettingsSidebar({
 
   useEffect(() => {
     if (!sidebarVisible) {
-      setProfileOpen(false);
-      setAccountOpen(false);
-      setApplicationOpen(false);
-      setRemindersOpen(false);
-      setLanguageOpen(false);
-      setHealthOpen(false);
-      setSupportOpen(false);
-      setTermsOpen(false);
-      setPrivacyOpen(false);
-      setEnergyOpen(false);
-      setMacrosOpen(false);
+      const frameId = window.requestAnimationFrame(() => {
+        setProfileOpen(false);
+        setAccountOpen(false);
+        setApplicationOpen(false);
+        setRemindersOpen(false);
+        setLanguageOpen(false);
+        setHealthOpen(false);
+        setSupportOpen(false);
+        setTermsOpen(false);
+        setPrivacyOpen(false);
+        setEnergyOpen(false);
+        setMacrosOpen(false);
+      });
+
+      return () => window.cancelAnimationFrame(frameId);
     }
   }, [sidebarVisible]);
 

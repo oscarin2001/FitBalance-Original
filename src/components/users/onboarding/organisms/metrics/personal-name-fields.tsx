@@ -47,7 +47,7 @@ export function PersonalNameFields({
                 {...field}
                 autoComplete="given-name"
                 placeholder="Juan"
-                className="h-12 rounded-2xl border-slate-200 bg-slate-50/70 px-4"
+                className="h-12 rounded-2xl border-slate-200 bg-slate-50/70 px-4 focus-visible:ring-emerald-200"
                 onChange={(event) => {
                   field.onChange(sanitizeNameValue(event.target.value));
                   onClearError("nombre");
@@ -70,7 +70,7 @@ export function PersonalNameFields({
                 {...field}
                 autoComplete="family-name"
                 placeholder="Perez"
-                className="h-12 rounded-2xl border-slate-200 bg-slate-50/70 px-4"
+                className="h-12 rounded-2xl border-slate-200 bg-slate-50/70 px-4 focus-visible:ring-emerald-200"
                 onChange={(event) => {
                   field.onChange(sanitizeNameValue(event.target.value));
                   onClearError("apellido");

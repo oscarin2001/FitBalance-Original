@@ -151,8 +151,8 @@ export function OnboardingMobileWizard({
   return (
     <main className="relative min-h-svh overflow-hidden bg-slate-50">
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -left-14 top-16 size-52 rounded-full bg-cyan-200/40 blur-3xl" />
-        <div className="absolute right-0 top-1/2 size-64 rounded-full bg-teal-200/35 blur-3xl" />
+        <div className="absolute -left-14 top-16 size-52 rounded-full bg-emerald-200/35 blur-3xl" />
+        <div className="absolute right-0 top-1/2 size-64 rounded-full bg-teal-200/30 blur-3xl" />
       </div>
 
       <div className="relative mx-auto grid w-full max-w-md gap-4 p-4 pb-8 pt-8">

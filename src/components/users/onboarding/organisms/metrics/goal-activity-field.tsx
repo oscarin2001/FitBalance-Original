@@ -76,7 +76,7 @@ export function GoalActivityField({
                     className={cn(
                       "grid cursor-pointer gap-3 rounded-2xl border bg-white p-4 transition-all",
                       selected
-                        ? "border-cyan-300 bg-cyan-50/80 shadow-sm shadow-cyan-100"
+                      ? "border-emerald-300 bg-emerald-50/80 shadow-sm shadow-emerald-100"
                         : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
                     )}
                   >
@@ -90,7 +90,7 @@ export function GoalActivityField({
                           </p>
                         </div>
                       </div>
-                      {selected ? <Check className="size-4 text-cyan-600" /> : null}
+                      {selected ? <Check className="size-4 text-emerald-600" /> : null}
                     </div>
                   </label>
                 );

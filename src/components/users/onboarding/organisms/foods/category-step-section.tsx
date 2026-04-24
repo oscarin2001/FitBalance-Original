@@ -66,7 +66,7 @@ export function CategoryStepSection({
             value={searchValue}
             onChange={(event) => onSearchChange(event.target.value)}
             placeholder={searchPlaceholder}
-            className="h-12 rounded-2xl border-slate-300 bg-slate-50/80 pl-10 shadow-[inset_0_1px_2px_rgba(15,23,42,0.05)] focus-visible:bg-white focus-visible:ring-2 focus-visible:ring-cyan-200"
+            className="h-12 rounded-2xl border-slate-300 bg-slate-50/80 pl-10 shadow-[inset_0_1px_2px_rgba(15,23,42,0.05)] focus-visible:bg-white focus-visible:ring-2 focus-visible:ring-emerald-200"
           />
         </div>
       </label>
@@ -124,7 +124,7 @@ export function CategoryStepSection({
                     className={cn(
                       "group flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm transition-colors duration-150",
                       selectedFoods.includes(food)
-                        ? "bg-cyan-50 text-cyan-950"
+                        ? "bg-emerald-50 text-emerald-950"
                         : "text-slate-700 hover:bg-slate-50"
                     )}
                   >
@@ -133,8 +133,8 @@ export function CategoryStepSection({
                         className={cn(
                           "inline-flex size-8 items-center justify-center rounded-full border transition-colors duration-150",
                           selectedFoods.includes(food)
-                            ? "border-cyan-300 bg-cyan-100 text-cyan-700"
-                            : "border-cyan-200 bg-cyan-50 text-cyan-600 group-hover:border-cyan-300 group-hover:bg-cyan-100"
+                            ? "border-emerald-300 bg-emerald-100 text-emerald-700"
+                            : "border-emerald-200 bg-emerald-50 text-emerald-600 group-hover:border-emerald-300 group-hover:bg-emerald-100"
                         )}
                         aria-hidden="true"
                       >

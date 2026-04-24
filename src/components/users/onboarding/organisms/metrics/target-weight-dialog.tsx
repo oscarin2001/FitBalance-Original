@@ -85,10 +85,10 @@ export function TargetWeightDialog({
         </div>
 
         <div className="flex flex-col-reverse gap-3 border-t border-slate-200 bg-slate-50/90 px-6 py-4 sm:flex-row sm:justify-end">
-          <Button type="button" variant="outline" className="h-11 w-full rounded-2xl sm:w-auto" onClick={onUseSuggestedTarget}>
+          <Button type="button" variant="outline" className="h-11 w-full rounded-2xl border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800 sm:w-auto" onClick={onUseSuggestedTarget}>
             Usar sugerencia
           </Button>
-          <Button type="button" className="h-11 w-full rounded-2xl sm:w-auto" onClick={() => void onSaveManualTarget()}>
+          <Button type="button" className="h-11 w-full rounded-2xl bg-emerald-500 text-white shadow-[0_18px_30px_-20px_rgba(16,185,129,0.95)] hover:bg-emerald-600 sm:w-auto" onClick={() => void onSaveManualTarget()}>
             Guardar objetivo
           </Button>
         </div>

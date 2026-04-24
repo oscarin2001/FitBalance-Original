@@ -235,7 +235,12 @@ export function LoginForm({
         </Field>
 
         <Field>
-          <Button type="button" onClick={handleEmailSubmit} disabled={isPending}>
+          <Button
+            type="button"
+            onClick={handleEmailSubmit}
+            disabled={isPending}
+            className="h-11 rounded-2xl bg-emerald-500 text-white shadow-[0_18px_30px_-20px_rgba(16,185,129,0.95)] hover:bg-emerald-600"
+          >
             {mode === "login"
               ? isPending
                 ? "Ingresando..."
@@ -265,7 +270,7 @@ export function LoginForm({
             type="button"
             onClick={handleGoogleSignIn}
             disabled={isPending}
-            className="h-11 w-full"
+            className="h-11 w-full rounded-2xl border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800"
           >
             <FcGoogle className="size-5" />
             {isPending ? "Conectando con Google..." : "Ingresar con Google"}
@@ -276,7 +281,7 @@ export function LoginForm({
           {mode === "login" ? "Si no tienes cuenta, " : "Si ya tienes cuenta, "}
           <Link
             href={mode === "login" ? "/users/register" : "/users/login"}
-            className="font-medium text-foreground underline underline-offset-4 transition-colors hover:text-primary"
+            className="font-medium text-foreground underline underline-offset-4 transition-colors hover:text-emerald-600"
             onClick={() => {
               setFeedback(undefined)
               setFieldErrors({})
@@ -304,4 +309,3 @@ export function LoginForm({
     </form>
   )
 }
-

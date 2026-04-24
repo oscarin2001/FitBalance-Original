@@ -66,7 +66,7 @@ export function SummaryStepCard({
     <Card className="mx-auto w-full max-w-2xl rounded-[2rem] border border-slate-200/70 bg-white/90 shadow-2xl shadow-slate-300/30 backdrop-blur">
       <CardHeader className="space-y-2 pb-2 text-center">
         <CardTitle className="flex items-center justify-center gap-2 text-2xl tracking-tight text-slate-900">
-          <ClipboardCheck className="size-5 text-primary" />
+          <ClipboardCheck className="size-5 text-emerald-700" />
           Resumen final
         </CardTitle>
       </CardHeader>
@@ -88,13 +88,13 @@ export function SummaryStepCard({
         />
 
         {isPending ? (
-          <div className="grid gap-2 border-t border-slate-200/70 pt-4 text-sm text-sky-900">
-            <p className="flex items-center gap-2 font-semibold text-sky-950">
+          <div className="grid gap-2 border-t border-slate-200/70 pt-4 text-sm text-emerald-900">
+            <p className="flex items-center gap-2 font-semibold text-emerald-950">
               <Loader2 className="size-4 animate-spin" />
               Estamos generando el plan por ti mientras carga
             </p>
-            <p className="text-sky-900">{pendingStage}</p>
-            <p className="text-xs text-sky-800">
+            <p className="text-emerald-900">{pendingStage}</p>
+            <p className="text-xs text-emerald-800">
               Este proceso puede tardar entre 10 y 30 segundos, según la carga del sistema.
             </p>
           </div>
@@ -109,11 +109,11 @@ export function SummaryStepCard({
         />
 
         <div className="grid grid-cols-2 gap-3">
-          <Button variant="outline" onClick={onBack} className="h-11 rounded-xl" disabled={isPending}>
+          <Button variant="outline" onClick={onBack} className="h-11 rounded-xl border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800" disabled={isPending}>
             <ArrowLeft className="size-4" />
             Volver
           </Button>
-          <Button onClick={onFinish} className="h-11 rounded-xl" disabled={isPending || !acceptedTerms}>
+          <Button onClick={onFinish} className="h-11 rounded-xl bg-emerald-500 text-white shadow-[0_18px_30px_-20px_rgba(16,185,129,0.95)] hover:bg-emerald-600" disabled={isPending || !acceptedTerms}>
             <CheckCircle2 className="size-4" />
             {isPending ? "Guardando..." : "Guardar y terminar"}
           </Button>

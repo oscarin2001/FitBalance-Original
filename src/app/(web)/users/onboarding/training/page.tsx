@@ -10,7 +10,10 @@ type OnboardingTrainingPageProps = {
 };
 
 export default async function OnboardingTrainingPage({ searchParams }: OnboardingTrainingPageProps) {
-  const [state, query] = await Promise.all([loadOnboardingPageState(), searchParams]);
+  const query = await searchParams;
+  const state = await loadOnboardingPageState({
+    allowEditingOnCompleted: query.edit === "training",
+  });
 
   if (query.edit === "training") {
     return (

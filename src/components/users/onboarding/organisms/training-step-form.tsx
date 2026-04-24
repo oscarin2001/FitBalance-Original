@@ -43,7 +43,7 @@ export function TrainingStepForm({
     <Card className="mx-auto w-full max-w-2xl rounded-[2rem] border border-white/70 bg-white/90 shadow-[0_35px_90px_-45px_rgba(15,23,42,0.4)] backdrop-blur">
       <CardHeader className="gap-2 border-b border-slate-200/70 pb-5">
         <CardTitle className="flex items-center gap-2 text-2xl tracking-tight text-slate-950">
-          <Dumbbell className="size-5 text-cyan-700" />
+          <Dumbbell className="size-5 text-emerald-700" />
           Entrenamiento
         </CardTitle>
       </CardHeader>
@@ -59,11 +59,22 @@ export function TrainingStepForm({
       </CardContent>
 
       <CardFooter className="grid grid-cols-2 gap-3">
-        <Button type="button" variant="outline" className="h-12 rounded-2xl" disabled={isPending} onClick={onBack}>
+        <Button
+          type="button"
+          variant="outline"
+          className="h-12 rounded-2xl border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800"
+          disabled={isPending}
+          onClick={onBack}
+        >
           <ArrowLeft className="size-4" />
           {backLabel}
         </Button>
-        <Button type="button" className="h-12 rounded-2xl" disabled={isPending} onClick={() => onContinue(value)}>
+        <Button
+          type="button"
+          className="h-12 rounded-2xl bg-emerald-500 text-white shadow-[0_18px_30px_-20px_rgba(16,185,129,0.95)] hover:bg-emerald-600"
+          disabled={isPending}
+          onClick={() => onContinue(value)}
+        >
           {isPending ? "Continuando..." : submitLabel}
         </Button>
       </CardFooter>

@@ -67,7 +67,7 @@ export function GoalObjectiveField({
                   className={cn(
                     "grid cursor-pointer gap-3 rounded-2xl border bg-white p-4 transition-all",
                     field.value === option.value
-                      ? "border-cyan-300 bg-cyan-50/80 shadow-sm shadow-cyan-100"
+                      ? "border-emerald-300 bg-emerald-50/80 shadow-sm shadow-emerald-100"
                       : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
                   )}
                 >
@@ -76,7 +76,7 @@ export function GoalObjectiveField({
                       <RadioGroupItem value={option.value} className="sr-only" />
                       <span className="font-semibold text-slate-950">{option.label}</span>
                     </div>
-                    {field.value === option.value ? <Check className="size-4 text-cyan-600" /> : null}
+                    {field.value === option.value ? <Check className="size-4 text-emerald-600" /> : null}
                   </div>
                 </label>
               ))}

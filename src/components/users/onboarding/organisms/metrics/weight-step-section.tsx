@@ -53,7 +53,7 @@ function getStatusBadgeClass(status: HealthyStatus) {
   }
 
   if (status === "below") {
-    return "border-sky-200 bg-sky-50 text-sky-700";
+    return "border-emerald-200 bg-emerald-50 text-emerald-700";
   }
 
   return "border-slate-200 bg-slate-50 text-slate-600";
@@ -89,7 +89,7 @@ export function WeightStepSection({
                   {...field}
                   inputMode="decimal"
                   placeholder={weightUnit === "kg" ? "72.5" : "160"}
-                  className="h-12 rounded-2xl border-slate-200 bg-slate-50/70 px-4"
+                className="h-12 rounded-2xl border-slate-200 bg-slate-50/70 px-4 focus-visible:ring-emerald-200"
                   onChange={(event) => {
                     field.onChange(event.target.value.replace(/[^\d.]/g, ""));
                     onClearError("pesoKg");
@@ -105,8 +105,8 @@ export function WeightStepSection({
                     className={cn(
                       "h-10 rounded-xl text-sm font-medium transition",
                       weightUnit === unit
-                        ? "bg-white text-slate-950 shadow-sm"
-                        : "text-slate-500 hover:text-slate-800"
+                        ? "bg-white text-emerald-950 shadow-sm"
+                        : "text-slate-500 hover:text-emerald-700"
                     )}
                     onClick={() => onWeightUnitChange(unit)}
                   >

@@ -5,8 +5,24 @@ import { OnboardingFoodsRouteStep } from "@/components/users/onboarding";
 
 export const dynamic = "force-dynamic";
 
-export default async function OnboardingFoodsPage() {
-  const state = await loadOnboardingPageState();
+type OnboardingFoodsPageProps = {
+  searchParams: Promise<{ edit?: string }>;
+};
+
+export default async function OnboardingFoodsPage({ searchParams }: OnboardingFoodsPageProps) {
+  const query = await searchParams;
+  const state = await loadOnboardingPageState({
+    allowEditingOnCompleted: query.edit === "foods",
+  });
+
+  if (query.edit === "foods") {
+    return (
+      <OnboardingFoodsRouteStep
+        userName={state.userName}
+        initialFoods={state.initialFoods}
+      />
+    );
+  }
 
   if (state.initialStep === "metrics") {
     redirect("/users/onboarding/data");
