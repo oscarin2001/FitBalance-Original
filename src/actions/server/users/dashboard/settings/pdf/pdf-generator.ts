@@ -1,5 +1,3 @@
-import { Objetivo } from "@prisma/client";
-
 import type {
   BuildNutritionPdfPayloadInput,
   NutritionPdfSummary,
@@ -127,11 +125,11 @@ function getDayTotals(meals: PdfMeal[]): PdfMacroTotals | null {
 }
 
 function getObjectiveHeadline(summary: NutritionPdfSummary) {
-  if (summary.objetivo === Objetivo.Bajar_grasa) {
+  if (summary.objetivo === "Bajar_grasa") {
     return "Este plan busca perder grasa manteniendo masa muscular.";
   }
 
-  if (summary.objetivo === Objetivo.Ganar_musculo) {
+  if (summary.objetivo === "Ganar_musculo") {
     return "Este plan busca ganar masa con un superavit controlado.";
   }
 
@@ -145,11 +143,11 @@ function getPracticalRules(summary: NutritionPdfSummary) {
     "Si tienes poca energia, revisa sueno y agua antes de bajar mas calorias.",
   ];
 
-  if (summary.objetivo === Objetivo.Bajar_grasa) {
+  if (summary.objetivo === "Bajar_grasa") {
     rules.unshift("Evita azucar añadido y exceso de carbohidratos en deficit.");
   }
 
-  if (summary.objetivo === Objetivo.Ganar_musculo) {
+  if (summary.objetivo === "Ganar_musculo") {
     rules.unshift("Reparte la proteina en todas las comidas para apoyar el musculo.");
   }
 
@@ -170,7 +168,7 @@ function getObjectiveWarnings(summary: NutritionPdfSummary) {
     "Si la energia cae mucho, sube volumen de comida o revisa el deficit.",
   ];
 
-  if (summary.objetivo === Objetivo.Bajar_grasa) {
+  if (summary.objetivo === "Bajar_grasa") {
     warnings.push("No recortes carbohidratos de forma extrema si ya estas en deficit.");
   }
 
