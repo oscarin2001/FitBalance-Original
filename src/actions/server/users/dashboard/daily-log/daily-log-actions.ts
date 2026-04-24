@@ -20,6 +20,11 @@ import {
 
 const WATER_GLASS_LITERS = 0.25;
 
+type DatedRecord = {
+  id: number;
+  fecha: Date;
+};
+
 const dailyComplianceSchema = z
   .object({
     dateIso: z.string().trim().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -61,7 +66,7 @@ export async function updateDailyComplianceAction(input: UpdateDailyComplianceIn
   }
 
   const targetDate = parseDateKey(parsed.data.dateIso);
-  const existingEntries = await prisma.cumplimientoDieta.findMany({
+  const existingEntries: DatedRecord[] = await prisma.cumplimientoDieta.findMany({
     where: { usuarioId: sessionResult.sessionUser.userId },
     select: { id: true, fecha: true },
   });
@@ -142,7 +147,7 @@ export async function updateDailyHydrationAction(input: UpdateDailyHydrationInpu
   const waterLiters = Number((parsed.data.glassCount * WATER_GLASS_LITERS).toFixed(2));
   const hydrationCompleted = parsed.data.dailyWaterLiters > 0 ? waterLiters >= parsed.data.dailyWaterLiters : waterLiters > 0;
 
-  const existingEntries = await prisma.hidratacionDia.findMany({
+  const existingEntries: DatedRecord[] = await prisma.hidratacionDia.findMany({
     where: { usuarioId: sessionResult.sessionUser.userId },
     select: { id: true, fecha: true },
   });
