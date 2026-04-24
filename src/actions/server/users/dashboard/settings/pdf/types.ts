@@ -1,4 +1,21 @@
-import type { NivelActividad, Objetivo, VelocidadCambio } from "@prisma/client";
+export type NivelActividad =
+  | "Sedentario"
+  | "Ligero"
+  | "Moderado"
+  | "Activo"
+  | "Extremo"
+  | "Muy_activo";
+
+export type Objetivo =
+  | "Bajar_grasa"
+  | "Ganar_musculo"
+  | "Mantenimiento"
+  | "Mantener";
+
+export type VelocidadCambio =
+  | "Lento"
+  | "Moderado"
+  | "Rapido";
 
 import type {
   PersistedMealPlanDay,
