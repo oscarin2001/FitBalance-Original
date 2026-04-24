@@ -1,0 +1,25 @@
+{
+  "name": "FitBalance",
+  "short_name": "FitBalance",
+  "description": "Asistente nutricional mobile-first con onboarding y dieta IA.",
+  "start_url": "/users/login",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "dir": "auto",
+  "lang": "es-ES",
+  "theme_color": "#22c55e",
+  "background_color": "#fafeff",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

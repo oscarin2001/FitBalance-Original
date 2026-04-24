@@ -18,9 +18,23 @@ import type {
   UserDashboardMealIngredient,
   UserDashboardMeal,
   UserDashboardPlan,
+  UserBodyMeasurementEntry,
+  UserWeightHistoryEntry,
 } from "@/actions/server/users/types";
 import type { MealFoodRole } from "@/actions/server/users/onboarding/types/weekly-meal-plan-types";
 import type { MealPortionSource, MealPortionTargets } from "@/actions/server/users/dashboard/meal-portions";
+
+type DashboardProgressRecord = {
+  id: number;
+  fecha: Date;
+  peso_kg: number | null;
+  pecho_cm: number | null;
+  cintura_cm: number | null;
+  cadera_cm: number | null;
+  brazo_cm: number | null;
+  muslo_cm: number | null;
+  pantorrilla_cm: number | null;
+};
 
 const mealOrder: ComidaTipo[] = ["Desayuno", "Almuerzo", "Snack", "Cena"];
 
@@ -45,6 +59,40 @@ function addTotals(base: DashboardMacroTotals, extra: DashboardMacroTotals): Das
   };
 }
 
+function buildWeightHistory(user: { progreso: DashboardProgressRecord[] }): UserWeightHistoryEntry[] {
+  return user.progreso
+    .filter((entry) => entry.peso_kg !== null)
+    .map((entry) => ({
+      id: entry.id,
+      dateIso: entry.fecha.toISOString(),
+      weightKg: entry.peso_kg as number,
+    }))
+    .sort((left, right) => new Date(left.dateIso).getTime() - new Date(right.dateIso).getTime());
+}
+
+function buildBodyMeasurements(user: { progreso: DashboardProgressRecord[] }): UserBodyMeasurementEntry[] {
+  return user.progreso
+    .filter(
+      (entry) =>
+        entry.pecho_cm !== null ||
+        entry.cintura_cm !== null ||
+        entry.cadera_cm !== null ||
+        entry.brazo_cm !== null ||
+        entry.muslo_cm !== null ||
+        entry.pantorrilla_cm !== null
+    )
+    .map((entry) => ({
+      id: entry.id,
+      dateIso: entry.fecha.toISOString(),
+      pechoCm: entry.pecho_cm,
+      cinturaCm: entry.cintura_cm,
+      caderaCm: entry.cadera_cm,
+      brazoCm: entry.brazo_cm,
+      musloCm: entry.muslo_cm,
+      pantorrillaCm: entry.pantorrilla_cm,
+    }))
+    .sort((left, right) => new Date(left.dateIso).getTime() - new Date(right.dateIso).getTime());
+}
 function isPlanAppliedOverride(overrides: unknown) {
   return typeof overrides === "object" && overrides !== null && (overrides as { applied?: unknown }).applied === true;
 }
@@ -767,6 +815,7 @@ function buildDashboardProfile(user: {
   sexo: string;
   altura_cm: number | null;
   peso_kg: number | null;
+  peso_objetivo_kg: number | null;
   tipo_entrenamiento: string | null;
   frecuencia_entreno: number | null;
   anos_entrenando: number | null;
@@ -778,6 +827,7 @@ function buildDashboardProfile(user: {
     sexo: user.sexo,
     alturaCm: user.altura_cm,
     pesoKg: user.peso_kg,
+    pesoObjetivoKg: user.peso_objetivo_kg,
     tipoEntrenamiento: user.tipo_entrenamiento,
     frecuenciaEntreno: user.frecuencia_entreno,
     anosEntrenando: user.anos_entrenando,
@@ -811,6 +861,7 @@ async function loadDashboardUser(userId: number) {
       sexo: true,
       altura_cm: true,
       peso_kg: true,
+      peso_objetivo_kg: true,
       tipo_entrenamiento: true,
       frecuencia_entreno: true,
       anos_entrenando: true,
@@ -831,6 +882,33 @@ async function loadDashboardUser(userId: number) {
         select: {
           fecha: true,
           cumplido: true,
+        },
+      },
+      progreso: {
+        select: {
+          id: true,
+          fecha: true,
+          peso_kg: true,
+          pecho_cm: true,
+          cintura_cm: true,
+          cadera_cm: true,
+          brazo_cm: true,
+          muslo_cm: true,
+          pantorrilla_cm: true,
+        },
+        where: {
+          OR: [
+            { peso_kg: { not: null } },
+            { pecho_cm: { not: null } },
+            { cintura_cm: { not: null } },
+            { cadera_cm: { not: null } },
+            { brazo_cm: { not: null } },
+            { muslo_cm: { not: null } },
+            { pantorrilla_cm: { not: null } },
+          ],
+        },
+        orderBy: {
+          fecha: "asc",
         },
       },
       planes: {
@@ -887,6 +965,8 @@ export type UsersPageState = {
   sessionUser: SessionAppUser;
   profile: UserDashboardProfile | null;
   dashboard: UserDashboardPlan | null;
+  weightHistory: UserWeightHistoryEntry[];
+  bodyMeasurements: UserBodyMeasurementEntry[];
   hasLoadError: boolean;
 };
 
@@ -894,6 +974,8 @@ export async function loadUsersPageState(options?: { requestedDateIso?: string |
   const sessionUser = await requireCompletedOnboarding();
   let profile: UserDashboardProfile | null = null;
   let dashboard: UserDashboardPlan | null = null;
+  let weightHistory: UserWeightHistoryEntry[] = [];
+  let bodyMeasurements: UserBodyMeasurementEntry[] = [];
   let hasLoadError = false;
 
   try {
@@ -904,12 +986,16 @@ export async function loadUsersPageState(options?: { requestedDateIso?: string |
     if (user) {
       profile = buildDashboardProfile(user);
       dashboard = buildDashboardPlan(user, options?.requestedDateIso ?? null);
+      weightHistory = buildWeightHistory(user);
+      bodyMeasurements = buildBodyMeasurements(user);
 
       if (!hasMeaningfulPlan(dashboard) && user.planes.length > 0) {
         await syncSeedFoodsToDatabase();
         user = await loadDashboardUser(sessionUser.userId);
         profile = user ? buildDashboardProfile(user) : profile;
         dashboard = user ? buildDashboardPlan(user, options?.requestedDateIso ?? null) : null;
+        weightHistory = user ? buildWeightHistory(user) : weightHistory;
+        bodyMeasurements = user ? buildBodyMeasurements(user) : bodyMeasurements;
       }
     }
   } catch (error) {
@@ -917,5 +1003,5 @@ export async function loadUsersPageState(options?: { requestedDateIso?: string |
     hasLoadError = true;
   }
 
-  return { sessionUser, profile, dashboard, hasLoadError };
+  return { sessionUser, profile, dashboard, weightHistory, bodyMeasurements, hasLoadError };
 }

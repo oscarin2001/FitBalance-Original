@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import type { UserDashboardPlan } from "@/actions/server/users/types";
-import type { UserDashboardProfile } from "@/actions/server/users/types";
+import type { UserBodyMeasurementEntry, UserDashboardProfile, UserWeightHistoryEntry } from "@/actions/server/users/types";
 
 import { BottomNavbar, type BottomNavbarTab } from "./bottom-navbar";
 import { DashboardSkeleton } from "./dashboard-skeleton";
@@ -16,6 +16,7 @@ import {
   type DailyLogProfile,
 } from "./organisms/daily-log-view";
 import type { DailyLogFoodOption } from "@/actions/server/users/dashboard/daily-log/types";
+import { GoalsView } from "@/components/users/goals";
 import { TopHeader } from "./top-header";
 import { downloadCurrentNutritionPlanPdf } from "./settings/pdf";
 import { DashboardProfileSidebarPanel } from "./settings/profile";
@@ -34,7 +35,7 @@ function resolveDailyLogProfile(objective: UserDashboardPlan["objective"]): Dail
 }
 
 function resolveDashboardTab(value: string | null): BottomNavbarTab {
-  if (value === "metas" || value === "comidas") {
+  if (value === "metas" || value === "comidas" || value === "comunidad") {
     return value;
   }
 
@@ -77,6 +78,8 @@ type DashboardViewProps = {
   initialFoods: DailyLogFoodOption[];
   profile: UserDashboardProfile | null;
   dashboard: UserDashboardPlan | null;
+  weightHistory: UserWeightHistoryEntry[];
+  bodyMeasurements: UserBodyMeasurementEntry[];
   isPlanPending: boolean;
 };
 
@@ -87,6 +90,8 @@ export function DashboardView({
   initialFoods,
   profile,
   dashboard,
+  weightHistory,
+  bodyMeasurements,
   isPlanPending,
 }: DashboardViewProps) {
   const router = useRouter();
@@ -151,6 +156,13 @@ export function DashboardView({
   function handleTabChange(tab: BottomNavbarTab) {
     setActiveTab(tab);
 
+    if (tab === "metas") {
+      const nextParams = new URLSearchParams(searchParams.toString());
+      nextParams.set("tab", tab);
+      router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
+      return;
+    }
+
     const section = document.getElementById(tab);
     section?.scrollIntoView({ behavior: "smooth", block: "start" });
 
@@ -183,6 +195,9 @@ export function DashboardView({
     );
   }
 
+  const resolvedCurrentWeightKg = profile?.pesoKg ?? weightHistory.at(-1)?.weightKg ?? null;
+  const resolvedTargetWeightKg = profile?.pesoObjetivoKg ?? resolvedCurrentWeightKg;
+
   return (
     <SidebarProvider defaultOpen={true}>
       <DashboardSettingsSidebar profile={profile} dashboard={dashboard} sessionEmail={sessionEmail} />
@@ -192,14 +207,28 @@ export function DashboardView({
         onOpenChange={setProfilePanelOpen}
       />
       <div className="flex min-w-0 flex-1 flex-col">
-        <TopHeader
-          userName={userName}
-          selectedDateIso={dashboard.selectedDateIso}
-          onDateChange={handleDateChange}
-          onAvatarClick={() => setProfilePanelOpen(true)}
-        />
+        {activeTab === "metas" ? (
+          <main className="relative min-h-svh overflow-hidden bg-white pb-44 pt-0">
+            <GoalsView
+              userName={userName}
+              objective={dashboard.objective}
+              currentWeightKg={resolvedCurrentWeightKg}
+              targetWeightKg={resolvedTargetWeightKg}
+              weightHistory={weightHistory}
+              bodyMeasurements={bodyMeasurements}
+              onAvatarClick={() => setProfilePanelOpen(true)}
+            />
+          </main>
+        ) : (
+          <>
+            <TopHeader
+              userName={userName}
+              selectedDateIso={dashboard.selectedDateIso}
+              onDateChange={handleDateChange}
+              onAvatarClick={() => setProfilePanelOpen(true)}
+            />
 
-        <main className="relative min-h-svh overflow-hidden bg-slate-50 pb-44 pt-24">
+            <main className="relative min-h-svh overflow-hidden bg-slate-50 pb-44 pt-24">
           <div className="pointer-events-none absolute inset-0">
             <div className="absolute -left-14 top-12 size-56 rounded-full bg-cyan-200/30 blur-3xl" />
             <div className="absolute right-0 top-1/3 size-64 rounded-full bg-teal-200/25 blur-3xl" />
@@ -244,8 +273,12 @@ export function DashboardView({
                 showHeader={false}
               />
             </section>
+
+            <section id="comunidad" className="scroll-mt-24" aria-hidden="true" />
           </div>
-        </main>
+            </main>
+          </>
+        )}
         {bottomNavbar}
       </div>
     </SidebarProvider>

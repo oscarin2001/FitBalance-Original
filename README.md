@@ -34,6 +34,12 @@ npm run prisma:generate
 npm run prisma:push
 ```
 
+Si quieres crear la base remota en Turso con el esquema actual, usa:
+
+```bash
+npm run prisma:push:remote
+```
+
 4. Levantar desarrollo:
 
 ```bash
@@ -47,7 +53,7 @@ Archivo de ejemplo en .env.example.
 En local:
 
 ```env
-TURSO_DATABASE_URL="file:./dev.db"
+DATABASE_URL="file:./dev.db"
 AUTH_SECRET="replace-with-long-random-secret"
 NEXTAUTH_URL="http://localhost:3000"
 GOOGLE_CLIENT_ID=""
@@ -73,11 +79,22 @@ Si usas otro puerto local, debes registrar tambien ese puerto en Google (por eje
 En produccion con Turso/libsql puedes usar:
 
 ```env
-TURSO_DATABASE_URL="libsql://tu-db.turso.io"
-TURSO_AUTH_TOKEN="tu_token"
+DATABASE_URL="libsql://tu-db.turso.io"
+DATABASE_AUTH_TOKEN="tu_token"
 AUTH_SECRET="tu_secret"
 GOOGLE_CLIENT_ID="tu_google_client_id"
 GOOGLE_CLIENT_SECRET="tu_google_client_secret"
+```
+
+`DATABASE_AUTH_TOKEN` es el nombre preferido para el token de la app; `TURSO_AUTH_TOKEN` sigue funcionando como alias.
+
+En Windows, la CLI de Turso corre dentro de WSL. Si necesitas crear la base desde la terminal, instala WSL, ejecuta el instalador oficial de Turso y luego usa:
+
+```bash
+turso auth login --headless
+turso db create mi_app_db
+turso db show mi_app_db
+turso db tokens create mi_app_db
 ```
 
 ## Flujo de autenticacion

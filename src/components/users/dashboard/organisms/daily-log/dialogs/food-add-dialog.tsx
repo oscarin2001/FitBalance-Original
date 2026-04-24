@@ -1,6 +1,6 @@
 "use client";
 
-import { useDeferredValue, useEffect, useMemo, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { ArrowLeft, CalendarDays, ChevronRight, Loader2, Search, Sparkles } from "lucide-react";
@@ -33,6 +33,8 @@ import { FoodQuickEntryDialog, type FoodQuickEntryValues } from "./food-quick-en
 
 import { MAX_INGREDIENT_QUANTITY } from "@/actions/server/users/dashboard/daily-log/constants";
 
+type FoodAddDialogInitialAction = "quick-entry" | "recipe-create";
+
 export type FoodAddValues = {
   food: DailyLogFoodOption;
   quantity: number;
@@ -54,6 +56,7 @@ type FoodAddDialogProps = {
   generatedRecipeDays?: UserDashboardWeeklyRecipeDay[];
   selectedDateIso: string;
   initialCatalogTab?: FoodAddDialogCatalogTab;
+  initialAction?: FoodAddDialogInitialAction;
   generatedRecipeDateIso?: string | null;
   generatedRecipeMealType?: string | null;
   onOpenChange: (open: boolean) => void;
@@ -238,6 +241,7 @@ export function FoodAddDialog({
   generatedRecipeDays,
   selectedDateIso,
   initialCatalogTab,
+  initialAction,
   generatedRecipeDateIso,
   generatedRecipeMealType,
   onOpenChange,
@@ -266,6 +270,7 @@ export function FoodAddDialog({
   const [foodCreateOpen, setFoodCreateOpen] = useState(false);
   const [quickEntryOpen, setQuickEntryOpen] = useState(false);
   const [recipeCreateOpen, setRecipeCreateOpen] = useState(false);
+  const initialActionAppliedRef = useRef<FoodAddDialogInitialAction | null>(null);
 
   const isFullScreen = useMemo(() => isMobileLayout || isStandalone, [isMobileLayout, isStandalone]);
   const deferredSearch = useDeferredValue(searchValue.trim().toLowerCase());
@@ -382,6 +387,29 @@ export function FoodAddDialog({
       window.removeEventListener(REFRESH_EVENT, handleRefresh);
     };
   }, [currentUserId, initialCatalogTab, initialFoods, open]);
+
+  useEffect(() => {
+    if (!open) {
+      initialActionAppliedRef.current = null;
+      return;
+    }
+
+    if (!initialAction || initialActionAppliedRef.current === initialAction) {
+      return;
+    }
+
+    initialActionAppliedRef.current = initialAction;
+
+    if (initialAction === "quick-entry") {
+      setQuickEntryOpen(true);
+      return;
+    }
+
+    if (initialAction === "recipe-create") {
+      setCatalogTab("my-recipes");
+      setRecipeCreateOpen(true);
+    }
+  }, [initialAction, open]);
 
   const filteredFoods = useMemo(() => {
     if (isRecipeCatalogTab(catalogTab)) {
@@ -578,6 +606,7 @@ export function FoodAddDialog({
       setCatalogTab("mine");
       setSearchValue("");
       router.refresh();
+      onOpenChange(false);
     }
 
     return result;
@@ -611,7 +640,7 @@ export function FoodAddDialog({
 
       router.refresh();
       setQuickEntryOpen(false);
-        onOpenChange(false);
+      onOpenChange(false);
     }
 
     return result;

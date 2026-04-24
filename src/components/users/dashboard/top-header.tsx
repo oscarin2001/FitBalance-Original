@@ -59,7 +59,7 @@ export function TopHeader({ userName, selectedDateIso, onDateChange, onAvatarCli
         )}
         style={{ paddingTop: "env(safe-area-inset-top)" }}
       >
-        <div className="mx-auto flex w-full items-center gap-3 px-4 py-3">
+        <div className="grid w-full grid-cols-[auto_1fr_auto] items-center gap-3 px-4 py-3">
           <button
             type="button"
             className="relative shrink-0"
@@ -83,7 +83,7 @@ export function TopHeader({ userName, selectedDateIso, onDateChange, onAvatarCli
             </span>
           </button>
 
-          <div className="flex flex-1 justify-center">
+          <div className="justify-self-center">
             <div className="flex items-center rounded-full border border-slate-200 bg-slate-50/90 p-1 shadow-sm">
               <Button
                 type="button"
@@ -117,6 +117,8 @@ export function TopHeader({ userName, selectedDateIso, onDateChange, onAvatarCli
               </Button>
             </div>
           </div>
+
+          <div className="size-11 shrink-0" aria-hidden="true" />
 
         </div>
       </header>
@@ -160,16 +162,16 @@ export function TopHeaderSkeleton() {
       className="fixed inset-x-0 top-0 z-50 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl"
       style={{ paddingTop: "env(safe-area-inset-top)" }}
     >
-      <div className="mx-auto flex w-full items-center gap-3 px-4 py-3">
+      <div className="grid w-full grid-cols-[auto_1fr_auto] items-center gap-3 px-4 py-3">
         <div className="size-11 animate-pulse rounded-full bg-slate-200" />
-        <div className="flex flex-1 justify-center">
+        <div className="justify-self-center">
           <div className="flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 p-1">
             <div className="size-7 animate-pulse rounded-full bg-slate-200" />
             <div className="h-7 w-28 animate-pulse rounded-full bg-slate-200" />
             <div className="size-7 animate-pulse rounded-full bg-slate-200" />
           </div>
         </div>
-        <div className="h-8 w-24 animate-pulse rounded-full bg-slate-200" />
+        <div className="size-11 animate-pulse rounded-full bg-slate-200" />
       </div>
     </header>
   );

@@ -2,7 +2,17 @@ import "dotenv/config";
 import { defineConfig } from "prisma/config";
 
 function resolveDatabaseUrl() {
-  return process.env.DATABASE_URL ?? process.env.TURSO_DATABASE_URL ?? "file:./dev.db";
+  const localDatabaseUrl = process.env.TURSO_DATABASE_URL;
+  if (localDatabaseUrl?.startsWith("file:")) {
+    return localDatabaseUrl;
+  }
+
+  const primaryDatabaseUrl = process.env.DATABASE_URL;
+  if (primaryDatabaseUrl?.startsWith("file:")) {
+    return primaryDatabaseUrl;
+  }
+
+  return "file:./dev.db";
 }
 
 export default defineConfig({

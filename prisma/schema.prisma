@@ -185,6 +185,7 @@ model ProgresoCorporal {
   pecho_cm        Float?
   brazo_cm        Float?
   muslo_cm        Float?
+  pantorrilla_cm  Float?
   gluteo_cm       Float?
   foto_url        String?
   notas           String?

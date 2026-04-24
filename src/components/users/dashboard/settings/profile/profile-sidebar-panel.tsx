@@ -78,6 +78,7 @@ export function DashboardProfileSidebarPanel({ open, profile, onOpenChange }: Da
     sexo: "Masculino",
     alturaCm: 169,
     pesoKg: null,
+    pesoObjetivoKg: null,
     tipoEntrenamiento: null,
     frecuenciaEntreno: null,
     anosEntrenando: null,

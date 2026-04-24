@@ -146,7 +146,25 @@ export type UserDashboardProfile = {
   sexo: string;
   alturaCm: number | null;
   pesoKg: number | null;
+  pesoObjetivoKg: number | null;
   tipoEntrenamiento: string | null;
   frecuenciaEntreno: number | null;
   anosEntrenando: number | null;
+};
+
+export type UserWeightHistoryEntry = {
+  id: number;
+  dateIso: string;
+  weightKg: number;
+};
+
+export type UserBodyMeasurementEntry = {
+  id: number;
+  dateIso: string;
+  pechoCm: number | null;
+  cinturaCm: number | null;
+  caderaCm: number | null;
+  brazoCm: number | null;
+  musloCm: number | null;
+  pantorrillaCm: number | null;
 };

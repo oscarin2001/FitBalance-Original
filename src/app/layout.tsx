@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -18,13 +18,20 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "FitBalance",
   description: "Base Next.js + Prisma para gestion de usuarios y nutricion.",
-  manifest: "/manifest.webmanifest",
+  manifest: "/manifest.json",
   applicationName: "FitBalance",
+  icons: {
+    icon: "/favicon.ico",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
     title: "FitBalance",
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#22c55e",
 };
 
 export default function RootLayout({

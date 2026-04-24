@@ -56,6 +56,7 @@ export function DashboardProfileDialog({ open, profile, onOpenChange }: Dashboar
     sexo: "Masculino",
     alturaCm: 169,
     pesoKg: null,
+    pesoObjetivoKg: null,
     tipoEntrenamiento: null,
     frecuenciaEntreno: null,
     anosEntrenando: null,

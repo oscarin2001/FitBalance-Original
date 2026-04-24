@@ -106,8 +106,6 @@ export type DailyLogViewProps = {
   showHeader?: boolean
   className?: string
   onAddMeal?: (meal: DailyLogMeal) => void
-  onAdvanced?: (meal: DailyLogMeal) => void
-  onMorePress?: (meal: DailyLogMeal) => void
 }
 
 type ProfileTheme = {
@@ -120,6 +118,8 @@ type ProfileTheme = {
 }
 
 type MealStatus = "apto" | "precaucion" | "fuera"
+
+type MealDialogMode = "food" | "recipe" | "quick-entry" | "recipe-create"
 
 type ThemeVariables = CSSProperties & {
   "--dailylog-accent"?: string
@@ -280,8 +280,9 @@ type MealActionsMenuProps = {
   summaryLabel: string
   totals: DailyLogTotals
   onAddMeal?: (meal: DailyLogMeal) => void
-  onAdvanced?: (meal: DailyLogMeal) => void
-  onMorePress?: (meal: DailyLogMeal) => void
+  onQuickEntry?: (meal: DailyLogMeal) => void
+  onViewAiRecipe?: (meal: DailyLogMeal) => void
+  onCreateRecipe?: (meal: DailyLogMeal) => void
   onCopyMeal?: (value: string) => void
   onClearMeal?: (meal: DailyLogMeal) => void
 }
@@ -291,8 +292,9 @@ function MealActionsMenu({
   summaryLabel,
   totals,
   onAddMeal,
-  onAdvanced,
-  onMorePress,
+  onQuickEntry,
+  onViewAiRecipe,
+  onCreateRecipe,
   onCopyMeal,
   onClearMeal,
 }: MealActionsMenuProps) {
@@ -323,8 +325,9 @@ function MealActionsMenu({
         className="min-w-[18rem] rounded-2xl border border-slate-200 bg-slate-50 p-1.5 shadow-[0_16px_32px_-16px_rgba(15,23,42,0.45)]"
       >
         <DropdownMenuItem
+          disabled={!onAddMeal}
           onClick={() => onAddMeal?.(meal)}
-          className="gap-2 rounded-xl px-2.5 py-2 text-sm text-slate-700 outline-none transition-colors focus:!bg-slate-200 focus:!text-slate-900"
+          className="gap-2 rounded-xl px-2.5 py-2 text-sm text-slate-700 outline-none transition-colors focus:!bg-slate-200 focus:!text-slate-900 data-[disabled]:text-slate-400 data-[disabled]:opacity-100"
         >
           <span className="flex size-4 items-center justify-center text-slate-500">
             <Plus className="size-4" />
@@ -333,8 +336,9 @@ function MealActionsMenu({
         </DropdownMenuItem>
 
         <DropdownMenuItem
-          onClick={() => onAdvanced?.(meal)}
-          className="gap-2 rounded-xl px-2.5 py-2 text-sm text-slate-700 outline-none transition-colors focus:!bg-slate-200 focus:!text-slate-900"
+          disabled={!onQuickEntry}
+          onClick={() => onQuickEntry?.(meal)}
+          className="gap-2 rounded-xl px-2.5 py-2 text-sm text-slate-700 outline-none transition-colors focus:!bg-slate-200 focus:!text-slate-900 data-[disabled]:text-slate-400 data-[disabled]:opacity-100"
         >
           <span className="flex size-4 items-center justify-center text-slate-500">
             <Zap className="size-4" />
@@ -343,10 +347,21 @@ function MealActionsMenu({
         </DropdownMenuItem>
 
         <DropdownMenuItem
-          onClick={() => onMorePress?.(meal)}
-          className="gap-2 rounded-xl px-2.5 py-2 text-sm text-slate-700 outline-none transition-colors focus:!bg-slate-200 focus:!text-slate-900"
+          disabled={!onViewAiRecipe}
+          onClick={() => onViewAiRecipe?.(meal)}
+          className="gap-2 rounded-xl px-2.5 py-2 text-sm text-slate-700 outline-none transition-colors focus:!bg-slate-200 focus:!text-slate-900 data-[disabled]:text-slate-400 data-[disabled]:opacity-100"
         >
           <span className="flex size-4 items-center justify-center text-slate-500">
+            <Sparkles className="size-4" />
+          </span>
+          Ver receta recomendada por IA
+        </DropdownMenuItem>
+
+        <DropdownMenuItem
+          disabled
+          className="gap-2 rounded-xl px-2.5 py-2 text-sm text-slate-700 data-[disabled]:text-slate-400 data-[disabled]:opacity-100"
+        >
+          <span className="flex size-4 items-center justify-center text-slate-400">
             <Scale className="size-4" />
           </span>
           Detalles de comida
@@ -354,42 +369,42 @@ function MealActionsMenu({
 
         <DropdownMenuSeparator className="mx-1 my-1 bg-slate-200" />
 
-        <DropdownMenuItem disabled className="gap-2 rounded-xl px-2.5 py-2 text-sm text-slate-700">
+        <DropdownMenuItem disabled className="gap-2 rounded-xl px-2.5 py-2 text-sm text-slate-700 data-[disabled]:text-slate-400 data-[disabled]:opacity-100">
           <span className="flex size-4 items-center justify-center text-slate-400">
             <Droplets className="size-4" />
           </span>
           Añadir nivel de glucosa
         </DropdownMenuItem>
 
-        <DropdownMenuItem disabled className="gap-2 rounded-xl px-2.5 py-2 text-sm text-slate-700">
+        <DropdownMenuItem disabled className="gap-2 rounded-xl px-2.5 py-2 text-sm text-slate-700 data-[disabled]:text-slate-400 data-[disabled]:opacity-100">
           <span className="flex size-4 items-center justify-center text-slate-400">
             <Flame className="size-4" />
           </span>
           Añadir nivel de cetonas
         </DropdownMenuItem>
 
-        <DropdownMenuItem disabled className="gap-2 rounded-xl px-2.5 py-2 text-sm text-slate-700">
+        <DropdownMenuItem disabled className="gap-2 rounded-xl px-2.5 py-2 text-sm text-slate-700 data-[disabled]:text-slate-400 data-[disabled]:opacity-100">
           <span className="flex size-4 items-center justify-center text-slate-400">
             <Zap className="size-4" />
           </span>
           Añadir insulina
         </DropdownMenuItem>
 
-        <DropdownMenuItem disabled className="gap-2 rounded-xl px-2.5 py-2 text-sm text-slate-700">
+        <DropdownMenuItem disabled className="gap-2 rounded-xl px-2.5 py-2 text-sm text-slate-700 data-[disabled]:text-slate-400 data-[disabled]:opacity-100">
           <span className="flex size-4 items-center justify-center text-slate-400">
             <PencilLine className="size-4" />
           </span>
           Añadir nota
         </DropdownMenuItem>
 
-        <DropdownMenuItem disabled className="gap-2 rounded-xl px-2.5 py-2 text-sm text-slate-700">
+        <DropdownMenuItem disabled className="gap-2 rounded-xl px-2.5 py-2 text-sm text-slate-700 data-[disabled]:text-slate-400 data-[disabled]:opacity-100">
           <span className="flex size-4 items-center justify-center text-slate-400">
             <Sparkles className="size-4" />
           </span>
           Añadir foto
         </DropdownMenuItem>
 
-        <DropdownMenuItem disabled className="gap-2 rounded-xl px-2.5 py-2 text-sm text-slate-700">
+        <DropdownMenuItem disabled className="gap-2 rounded-xl px-2.5 py-2 text-sm text-slate-700 data-[disabled]:text-slate-400 data-[disabled]:opacity-100">
           <span className="flex size-4 items-center justify-center text-slate-400">
             <Clock3 className="size-4" />
           </span>
@@ -398,8 +413,12 @@ function MealActionsMenu({
 
         <DropdownMenuSeparator className="mx-1 my-1 bg-slate-200" />
 
-        <DropdownMenuItem disabled className="gap-2 rounded-xl px-2.5 py-2 text-sm text-slate-700">
-          <span className="flex size-4 items-center justify-center text-slate-400">
+        <DropdownMenuItem
+          disabled={!onCreateRecipe}
+          onClick={() => onCreateRecipe?.(meal)}
+          className="gap-2 rounded-xl px-2.5 py-2 text-sm text-slate-700 outline-none transition-colors focus:!bg-slate-200 focus:!text-slate-900 data-[disabled]:text-slate-400 data-[disabled]:opacity-100"
+        >
+          <span className="flex size-4 items-center justify-center text-slate-500">
             <ChefHat className="size-4" />
           </span>
           Crear receta
@@ -407,7 +426,7 @@ function MealActionsMenu({
 
         <DropdownMenuItem
           onClick={() => onAddMeal?.(meal)}
-          className="gap-2 rounded-xl px-2.5 py-2 text-sm text-slate-700 outline-none transition-colors focus:!bg-slate-200 focus:!text-slate-900"
+          className="gap-2 rounded-xl px-2.5 py-2 text-sm text-slate-700 outline-none transition-colors focus:!bg-slate-200 focus:!text-slate-900 data-[disabled]:text-slate-400 data-[disabled]:opacity-100"
         >
           <span className="flex size-4 items-center justify-center text-slate-500">
             <ListPlus className="size-4" />
@@ -415,7 +434,7 @@ function MealActionsMenu({
           Añadir alimentos a comida
         </DropdownMenuItem>
 
-        <DropdownMenuItem disabled className="gap-2 rounded-xl px-2.5 py-2 text-sm text-slate-700">
+        <DropdownMenuItem disabled className="gap-2 rounded-xl px-2.5 py-2 text-sm text-slate-700 data-[disabled]:text-slate-400 data-[disabled]:opacity-100">
           <span className="flex size-4 items-center justify-center text-slate-400">
             <Sparkles className="size-4" />
           </span>
@@ -434,7 +453,7 @@ function MealActionsMenu({
           Copiar a...
         </DropdownMenuItem>
 
-        <DropdownMenuItem disabled className="gap-2 rounded-xl px-2.5 py-2 text-sm text-slate-700">
+        <DropdownMenuItem disabled className="gap-2 rounded-xl px-2.5 py-2 text-sm text-slate-700 data-[disabled]:text-slate-400 data-[disabled]:opacity-100">
           <span className="flex size-4 items-center justify-center text-slate-400">
             <Move className="size-4" />
           </span>
@@ -1081,8 +1100,6 @@ export function DailyLogView({
   showHeader = true,
   className,
   onAddMeal,
-  onAdvanced,
-  onMorePress,
 }: DailyLogViewProps) {
   const router = useRouter()
   const themeVariables = getThemeVariables(dietProfile)
@@ -1097,7 +1114,7 @@ export function DailyLogView({
   const [activeMealDialog, setActiveMealDialog] = useState<{
     mealId: string | number
     mealTitle: string
-    mode: "food" | "recipe"
+    mode: MealDialogMode
   } | null>(null)
 
   useEffect(() => {
@@ -1167,12 +1184,32 @@ export function DailyLogView({
     onAddMeal?.(meal)
   }
 
+  function handleOpenQuickEntry(meal: DailyLogMeal) {
+    setActiveMealDialog({
+      mealId: meal.id,
+      mealTitle: meal.title,
+      mode: "quick-entry",
+    })
+  }
+
+  function handleOpenRecipeCreate(meal: DailyLogMeal) {
+    setActiveMealDialog({
+      mealId: meal.id,
+      mealTitle: meal.title,
+      mode: "recipe-create",
+    })
+  }
+
   function handleOpenRecipeGenerator(meal: DailyLogMeal) {
     setActiveMealDialog({
       mealId: meal.id,
       mealTitle: meal.title,
       mode: "recipe",
     })
+  }
+
+  function handleViewAiRecipe(meal: DailyLogMeal) {
+    handleOpenRecipeGenerator(meal)
   }
 
   async function handleAddFood(values: FoodAddValues) {
@@ -1331,7 +1368,7 @@ export function DailyLogView({
                 key={meal.id}
                 className="overflow-hidden rounded-[1.6rem] border border-slate-200/80 bg-gradient-to-br from-white via-white to-slate-50/70 shadow-[0_18px_54px_-34px_rgba(15,23,42,0.42)]"
               >
-                <CardHeader className="space-y-1.5 pb-2.5">
+                <CardHeader className="space-y-2 pb-2.5">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 space-y-1">
                       <CardTitle className="text-base font-semibold tracking-tight text-slate-950 sm:text-lg">
@@ -1340,29 +1377,30 @@ export function DailyLogView({
                       <p className="text-sm leading-6 text-slate-600">{summaryLabel}</p>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                      {meal.instructionsSource !== "generated" ? (
-                        <Button
-                          type="button"
-                          className="h-8 rounded-full bg-gradient-to-r from-cyan-500 via-teal-500 to-emerald-500 px-3 text-[11px] font-semibold text-white shadow-[0_12px_24px_-12px_rgba(6,182,212,0.75)] ring-1 ring-cyan-200 transition-transform hover:-translate-y-0.5 hover:shadow-[0_16px_28px_-12px_rgba(6,182,212,0.82)] whitespace-nowrap"
-                          onClick={() => handleOpenRecipeGenerator(meal)}
-                        >
-                          <Sparkles className="size-3.5" />
-                          Crear receta con IA
-                        </Button>
-                      ) : null}
-
                       <MealActionsMenu
                         meal={meal}
                         summaryLabel={summaryLabel}
                         totals={totals}
                         onAddMeal={handleOpenFoodAdder}
-                        onAdvanced={onAdvanced}
-                        onMorePress={onMorePress}
+                        onQuickEntry={handleOpenQuickEntry}
+                        onViewAiRecipe={handleViewAiRecipe}
+                        onCreateRecipe={handleOpenRecipeCreate}
                         onClearMeal={(mealItem) => handleClearMeal(mealItem.id)}
                       />
-                    </div>
                   </div>
+
+                  {meal.instructionsSource !== "generated" ? (
+                    <div className="flex">
+                      <Button
+                        type="button"
+                        className="h-9 w-full justify-center rounded-full bg-gradient-to-r from-cyan-500 via-teal-500 to-emerald-500 px-4 text-[12px] font-semibold text-white shadow-[0_12px_24px_-12px_rgba(6,182,212,0.75)] ring-1 ring-cyan-200 transition-transform hover:-translate-y-0.5 hover:shadow-[0_16px_28px_-12px_rgba(6,182,212,0.82)] sm:w-fit whitespace-nowrap"
+                        onClick={() => handleOpenRecipeGenerator(meal)}
+                      >
+                        <Sparkles className="size-3.5" />
+                        Crear receta con IA
+                      </Button>
+                    </div>
+                  ) : null}
                 </CardHeader>
 
                 <Separator className="bg-slate-200/80" />
@@ -1472,9 +1510,10 @@ export function DailyLogView({
         initialFoods={initialFoods}
         generatedRecipeDays={weeklyRecipes ?? []}
         selectedDateIso={selectedDateIso}
-        initialCatalogTab={activeMealDialog?.mode === "recipe" ? "my-recipes" : "all"}
-        generatedRecipeDateIso={activeMealDialog?.mode === "recipe" ? selectedDateIso : null}
-        generatedRecipeMealType={activeMealDialog?.mode === "recipe" ? activeMealDialog.mealTitle : null}
+        initialCatalogTab={activeMealDialog?.mode === "recipe" || activeMealDialog?.mode === "recipe-create" ? "my-recipes" : "all"}
+        initialAction={activeMealDialog?.mode === "quick-entry" ? "quick-entry" : activeMealDialog?.mode === "recipe-create" ? "recipe-create" : undefined}
+        generatedRecipeDateIso={activeMealDialog?.mode === "recipe" || activeMealDialog?.mode === "recipe-create" ? selectedDateIso : null}
+        generatedRecipeMealType={activeMealDialog?.mode === "recipe" || activeMealDialog?.mode === "recipe-create" ? activeMealDialog.mealTitle : null}
         onOpenChange={(nextOpen) => {
           if (!nextOpen) {
             setActiveMealDialog(null)

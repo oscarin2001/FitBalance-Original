@@ -17,6 +17,7 @@ type PdfMeal = {
   recipeName: string;
   foods: Array<string | { name: string }>;
   nutrition?: PdfMacroTotals;
+  instructions?: string[];
 };
 
 type PdfWeeklyPlanDay = {
@@ -98,6 +99,10 @@ function sortWeeklyPlanDays(weeklyPlan: BuildNutritionPdfPayloadInput["weeklyPla
 
 function getFoodName(food: string | { name: string }) {
   return typeof food === "string" ? food : food.name;
+}
+
+function getMealInstructions(meal: PdfMeal) {
+  return (meal.instructions ?? []).map((instruction) => instruction.trim()).filter(Boolean);
 }
 
 function getDayTotals(meals: PdfMeal[]): PdfMacroTotals | null {
@@ -191,10 +196,20 @@ function buildWeeklyPlanLines(weeklyPlan: BuildNutritionPdfPayloadInput["weeklyP
     return [
       `### ${typedDay.dayLabel}`,
       `Total diario: ${Math.round(dayTotals.calories)} kcal | Proteinas ${Math.round(dayTotals.proteins)} g | Grasas ${Math.round(dayTotals.fats)} g | Carbohidratos ${Math.round(dayTotals.carbs)} g`,
-      ...typedDay.meals.flatMap((meal) => [
-        `- ${meal.mealType}: ${meal.recipeName}`,
-        `  Alimentos: ${meal.foods.map(getFoodName).join(", ")}`,
-      ]),
+      ...typedDay.meals.flatMap((meal) => {
+        const instructions = getMealInstructions(meal);
+
+        return [
+          `- ${meal.mealType}: ${meal.recipeName}`,
+          `  Alimentos: ${meal.foods.map(getFoodName).join(", ")}`,
+          ...(instructions.length > 0
+            ? [
+                "  Receta IA:",
+                ...instructions.map((instruction, index) => `    Paso ${index + 1}: ${instruction}`),
+              ]
+            : []),
+        ];
+      }),
       "",
     ];
   });
@@ -222,6 +237,7 @@ export function buildNutritionPdfPayload(input: BuildNutritionPdfPayloadInput) {
         tipo: meal.mealType,
         nombrePlatillo: meal.recipeName,
         alimentos: meal.foods.map(getFoodName),
+        instrucciones: getMealInstructions(meal),
       })),
     };
   });
@@ -267,7 +283,7 @@ export function buildNutritionPdfPayload(input: BuildNutritionPdfPayloadInput) {
   ].join("\n");
 
   return {
-    version: "nutrition-pdf-v3",
+    version: "nutrition-pdf-v4",
     generatedAt,
     user: {
       nombre: input.userName,

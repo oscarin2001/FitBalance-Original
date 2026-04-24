@@ -99,9 +99,9 @@ export function FoodAddDialogActionsMenu({
 
         <DropdownMenuItem
           onClick={() => onViewAiRecipe?.()}
-          className="gap-3 rounded-xl px-3 py-2.5 text-sm text-slate-700 outline-none transition-colors focus:!bg-slate-100 focus:!text-slate-950"
+          className="gap-3 rounded-xl border border-cyan-200 bg-gradient-to-r from-cyan-500 via-teal-500 to-emerald-500 px-3 py-2.5 text-sm font-semibold text-white shadow-[0_14px_24px_-16px_rgba(6,182,212,0.85)] outline-none transition-transform hover:-translate-y-0.5 hover:shadow-[0_18px_30px_-16px_rgba(6,182,212,0.9)] focus:!bg-gradient-to-r focus:!from-cyan-500 focus:!via-teal-500 focus:!to-emerald-500 focus:!text-white"
         >
-          <MenuItemIcon icon={Sparkles} className="size-4 text-cyan-600" />
+          <MenuItemIcon icon={Sparkles} className="size-4 text-white" />
           Ver receta recomendada por IA
         </DropdownMenuItem>
 

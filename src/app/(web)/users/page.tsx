@@ -10,7 +10,7 @@ type UsersPageProps = {
 
 export default async function UsersPage({ searchParams }: UsersPageProps) {
   const { date } = await searchParams;
-  const { sessionUser, profile, dashboard, hasLoadError } = await loadUsersPageState({ requestedDateIso: date });
+  const { sessionUser, profile, dashboard, weightHistory, bodyMeasurements, hasLoadError } = await loadUsersPageState({ requestedDateIso: date });
   const foodCatalogResult = await loadDailyLogFoodCatalogAction(sessionUser.userId);
 
   if (hasLoadError) {
@@ -30,6 +30,8 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
       initialFoods={foodCatalogResult.ok ? foodCatalogResult.foods ?? [] : []}
       profile={profile}
       dashboard={dashboard}
+      weightHistory={weightHistory}
+      bodyMeasurements={bodyMeasurements}
       isPlanPending={dashboard === null}
     />
   );

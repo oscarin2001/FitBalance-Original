@@ -1,17 +1,25 @@
 "use client";
 
-import { BarChart3, LayoutGrid, Plus, Utensils } from "lucide-react";
+import { BarChart3, LayoutGrid, Plus, Users, Utensils, type LucideIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-export type BottomNavbarTab = "registro" | "metas" | "comidas";
+export type BottomNavbarTab = "registro" | "metas" | "comidas" | "comunidad";
 
-const NAV_ITEMS = [
+type NavItemConfig = {
+  key: BottomNavbarTab;
+  label: string;
+  icon: LucideIcon;
+  beta?: boolean;
+};
+
+const NAV_ITEMS: NavItemConfig[] = [
   { key: "registro", label: "Registro", icon: LayoutGrid },
   { key: "metas", label: "Metas", icon: BarChart3 },
-  { key: "comidas", label: "Comidas", icon: Utensils },
-] as const;
+  { key: "comidas", label: "Comidas", icon: Utensils, beta: true },
+  { key: "comunidad", label: "Comunidad", icon: Users, beta: true },
+] ;
 
 type BottomNavbarProps = {
   activeTab: BottomNavbarTab;
@@ -32,13 +40,27 @@ export function BottomNavbar({ activeTab, onTabChange, onFabClick, className }: 
     >
       <div className="relative mx-auto flex w-full items-center justify-around px-4 pt-3">
         {NAV_ITEMS.slice(0, 2).map((item) => (
-          <NavItem key={item.key} active={activeTab === item.key} label={item.label} icon={item.icon} onClick={() => onTabChange(item.key)} />
+          <NavItem
+            key={item.key}
+            active={activeTab === item.key}
+            label={item.label}
+            icon={item.icon}
+            beta={item.beta}
+            onClick={() => onTabChange(item.key)}
+          />
         ))}
 
         <div className="w-16" aria-hidden="true" />
 
         {NAV_ITEMS.slice(2).map((item) => (
-          <NavItem key={item.key} active={activeTab === item.key} label={item.label} icon={item.icon} onClick={() => onTabChange(item.key)} />
+          <NavItem
+            key={item.key}
+            active={activeTab === item.key}
+            label={item.label}
+            icon={item.icon}
+            beta={item.beta}
+            onClick={() => onTabChange(item.key)}
+          />
         ))}
 
         <Button
@@ -58,25 +80,34 @@ function NavItem({
   active,
   label,
   icon: Icon,
+  beta,
   onClick,
 }: {
   active: boolean;
   label: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: LucideIcon;
+  beta?: boolean;
   onClick: () => void;
 }) {
+  const toneClassName = beta
+    ? "text-slate-400"
+    : active
+      ? "text-teal-600"
+      : "text-slate-400 hover:text-slate-700";
+
   return (
     <button
       type="button"
       aria-pressed={active}
       onClick={onClick}
       className={cn(
-        "flex w-16 flex-col items-center gap-1 rounded-xl px-1 py-2 text-[11px] font-medium transition duration-200 active:scale-95",
-        active ? "text-teal-600" : "text-slate-400 hover:text-slate-700"
+        "flex w-16 flex-col items-center gap-0.5 rounded-xl px-1 py-2 text-[11px] font-medium transition duration-200 active:scale-95",
+        toneClassName
       )}
     >
-      <Icon className={cn("size-6 transition-transform duration-200", active && "-translate-y-0.5")}/>
+      <Icon className={cn("size-6 transition-transform duration-200", beta ? "text-slate-400" : active && "-translate-y-0.5")} />
       <span className="leading-none">{label}</span>
+      {beta ? <span className="text-[9px] font-semibold uppercase tracking-[0.16em] text-slate-300">BETA</span> : null}
     </button>
   );
 }
