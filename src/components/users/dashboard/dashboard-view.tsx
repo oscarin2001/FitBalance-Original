@@ -47,6 +47,7 @@ function mapDashboardMeals(meals: UserDashboardPlan["meals"]): DailyLogMeal[] {
     id: meal.id,
     title: meal.mealType,
     recipeName: meal.recipeName,
+    summaryLabel: meal.summaryLabel,
     ingredients: meal.ingredients.map((ingredient, index) => ({
       id: `${meal.id}-${index}`,
       name: ingredient.name,
@@ -233,6 +234,7 @@ export function DashboardView({
                 sessionUserId={sessionUserId}
                 initialFoods={initialFoods}
                 meals={mapDashboardMeals(dashboard.meals)}
+                weeklyRecipes={dashboard.weeklyRecipes}
                 dietProfile={resolveDailyLogProfile(dashboard.objective)}
                 targets={dashboard.dayTargets}
                 selectedDateIso={dashboard.selectedDateIso}

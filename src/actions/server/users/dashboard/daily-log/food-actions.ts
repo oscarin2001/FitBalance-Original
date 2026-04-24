@@ -546,10 +546,12 @@ export async function addDashboardMealFoodAction(input: unknown): Promise<Action
         typeof meal.overrides === "object" && meal.overrides !== null
           ? {
               ...(meal.overrides as Record<string, unknown>),
+              applied: true,
               foods: nextFoods,
               mealNutrition: calculateTotals(nextFoods),
             }
           : {
+              applied: true,
               foods: nextFoods,
               mealNutrition: calculateTotals(nextFoods),
             },

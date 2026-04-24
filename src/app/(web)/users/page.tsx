@@ -8,22 +8,6 @@ type UsersPageProps = {
   searchParams: Promise<{ date?: string; tab?: string }>;
 };
 
-function hasMeaningfulPlan(dashboard: Awaited<ReturnType<typeof loadUsersPageState>>["dashboard"]): boolean {
-  if (!dashboard) {
-    return false;
-  }
-
-  const hasMealNutrition = dashboard.meals.some(
-    (meal) =>
-      meal.totals.calories > 0 ||
-      meal.totals.proteins > 0 ||
-      meal.totals.carbs > 0 ||
-      meal.totals.fats > 0
-  );
-
-  return hasMealNutrition || dashboard.dayTotals.calories > 0 || dashboard.weekTotals.calories > 0;
-}
-
 export default async function UsersPage({ searchParams }: UsersPageProps) {
   const { date } = await searchParams;
   const { sessionUser, profile, dashboard, hasLoadError } = await loadUsersPageState({ requestedDateIso: date });
@@ -46,7 +30,7 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
       initialFoods={foodCatalogResult.ok ? foodCatalogResult.foods ?? [] : []}
       profile={profile}
       dashboard={dashboard}
-      isPlanPending={!hasMeaningfulPlan(dashboard)}
+      isPlanPending={dashboard === null}
     />
   );
 }

@@ -4,12 +4,14 @@ import type { SessionAppUser } from "@/actions/server/users/auth";
 import { requireCompletedOnboarding } from "@/actions/server/users/auth";
 import { syncSeedFoodsToDatabase } from "@/actions/server/users/onboarding/logic/food-seed-sync";
 import {
-  buildFallbackMealInstructions,
+  buildDetailedMealInstructions,
+  hasCookingTimingHints,
   normalizeInstructionSteps,
 } from "@/components/users/dashboard/lib/meal-formatters";
+import { formatMacroLine } from "@/components/users/dashboard/lib/meal-formatters";
 import { prisma } from "@/actions/server/users/prisma";
 import { buildTargetMealPortions } from "@/actions/server/users/dashboard/meal-portions";
-import { formatRelativeDateLabel, getDateKeyDifference, shiftDateKey, toDateKey } from "@/lib/date-labels";
+import { formatRelativeDateLabel, formatWeekdayLabel, getDateKeyDifference, parseDateKey, shiftDateKey, toDateKey } from "@/lib/date-labels";
 import type {
   DashboardMacroTotals,
   UserDashboardProfile,
@@ -40,6 +42,59 @@ function addTotals(base: DashboardMacroTotals, extra: DashboardMacroTotals): Das
     proteins: round(base.proteins + extra.proteins),
     carbs: round(base.carbs + extra.carbs),
     fats: round(base.fats + extra.fats),
+  };
+}
+
+function isPlanAppliedOverride(overrides: unknown) {
+  return typeof overrides === "object" && overrides !== null && (overrides as { applied?: unknown }).applied === true;
+}
+
+type DashboardMealRecord = {
+  meal: UserDashboardMeal;
+  isGenerated: boolean;
+  isApplied: boolean;
+};
+
+function shiftMealRecordMap(
+  sourceMap: Map<string, DashboardMealRecord[]>,
+  dateShiftDays: number
+) {
+  if (dateShiftDays <= 0) {
+    return sourceMap;
+  }
+
+  return new Map(
+    [...sourceMap.entries()].map(([dateKey, records]) => [shiftDateKey(dateKey, -dateShiftDays), records] as const)
+  );
+}
+
+function buildEmptyMealShell(mealType: ComidaTipo, mealIndex: number): UserDashboardMeal {
+  const empty = emptyTotals();
+
+  return {
+    id: -(mealIndex + 1),
+    mealType,
+    recipeName: mealType,
+    foods: [],
+    ingredients: [],
+    instructions: [],
+    instructionsSource: "database",
+    totals: empty,
+    summaryLabel: formatMacroLine(empty),
+    applied: false,
+  };
+}
+
+function buildHiddenMealCopy(meal: UserDashboardMeal): UserDashboardMeal {
+  const empty = emptyTotals();
+
+  return {
+    ...meal,
+    ingredients: [],
+    foods: [],
+    totals: empty,
+    summaryLabel: formatMacroLine(empty),
+    applied: false,
   };
 }
 
@@ -525,12 +580,17 @@ function buildDashboardPlan(
   requestedDateIso?: string | null
 ): UserDashboardPlan | null {
   const mealPortionTargets = buildMealPortionTargetsFromUser(user);
-  const mealsByDate = new Map<string, UserDashboardMeal[]>();
-  const weekTotals = user.planes.reduce<DashboardMacroTotals>((acc, plan) => {
-    const dateKey = toDateKey(plan.fecha);
-    const currentMeals = mealsByDate.get(dateKey) ?? [];
+  const mealRecordsByDate = new Map<string, DashboardMealRecord[]>();
+  const generatedMealRecordsByDate = new Map<string, DashboardMealRecord[]>();
+  for (const plan of user.planes) {
     const overrideFoods = getOverrideFoods(plan.overrides);
     const hasGeneratedFoodIds = overrideFoods !== null && overrideFoods.length > 0 && overrideFoods.every((food) => food.foodId != null);
+    const overrideSource =
+      typeof (plan.overrides as { source?: unknown } | null)?.source === "string"
+        ? ((plan.overrides as { source?: string } | null)?.source ?? null)
+        : null;
+    const isGeneratedMeal = Boolean(overrideSource) || hasGeneratedFoodIds;
+    const isAppliedMeal = isPlanAppliedOverride(plan.overrides);
     const ingredients =
       overrideFoods === null
         ? buildMealIngredients(plan.receta.alimentos)
@@ -542,24 +602,30 @@ function buildDashboardPlan(
             )
           : buildOverrideMealIngredients(overrideFoods);
     const totals = sumIngredientTotals(ingredients);
-    const instructions = normalizeInstructionSteps(
-      plan.receta.instrucciones,
-      buildFallbackMealInstructions({
-        mealType: plan.comida_tipo,
-        recipeName: plan.receta.nombre,
-        ingredients,
-      })
-    );
-
-    currentMeals.push({
+    const detailedFallbackInstructions = buildDetailedMealInstructions({
+      mealType: plan.comida_tipo,
+      recipeName: plan.receta.nombre,
+      ingredients,
+    });
+    const normalizedInstructions = normalizeInstructionSteps(plan.receta.instrucciones, detailedFallbackInstructions);
+    const instructions =
+      isGeneratedMeal && !hasCookingTimingHints(normalizedInstructions)
+        ? detailedFallbackInstructions
+        : normalizedInstructions;
+    const meal: UserDashboardMeal = {
       id: plan.id,
       mealType: plan.comida_tipo,
       recipeName: plan.receta.nombre,
       foods: buildIngredientNames(ingredients),
       ingredients,
       instructions,
-      instructionsSource: plan.receta.instrucciones ? "database" : "generated",
+      instructionsSource: isGeneratedMeal ? "generated" : "database",
       totals,
+      summaryLabel:
+        totals.calories === 0 && totals.proteins === 0 && totals.carbs === 0 && totals.fats === 0
+          ? formatMacroLine(totals)
+          : undefined,
+      applied: isAppliedMeal,
       isShared: plan.receta.esCompartida,
       sharedByName: plan.receta.compartidaPor
         ? `${plan.receta.compartidaPor.nombre} ${plan.receta.compartidaPor.apellido}`.trim()
@@ -568,22 +634,32 @@ function buildDashboardPlan(
       createdByName: plan.receta.creadaPor
         ? `${plan.receta.creadaPor.nombre} ${plan.receta.creadaPor.apellido}`.trim()
         : null,
-    });
+    };
+    const mealRecord: DashboardMealRecord = {
+      meal,
+      isGenerated: isGeneratedMeal,
+      isApplied: isAppliedMeal,
+    };
 
-    mealsByDate.set(dateKey, currentMeals);
-    return addTotals(acc, totals);
-  }, emptyTotals());
+    const dateKey = toDateKey(plan.fecha);
+    const nextRecords = mealRecordsByDate.get(dateKey) ?? [];
+    nextRecords.push(mealRecord);
+    mealRecordsByDate.set(dateKey, nextRecords);
+
+    if (isGeneratedMeal) {
+      const nextGeneratedRecords = generatedMealRecordsByDate.get(dateKey) ?? [];
+      nextGeneratedRecords.push(mealRecord);
+      generatedMealRecordsByDate.set(dateKey, nextGeneratedRecords);
+    }
+
+  }
 
   const todayKey = toDateKey(new Date());
-  const orderedDateKeys = [...mealsByDate.keys()].sort();
+  const orderedDateKeys = [...mealRecordsByDate.keys()].sort();
   const firstDateKey = orderedDateKeys[0] ?? null;
   const dateShiftDays = firstDateKey ? Math.max(getDateKeyDifference(firstDateKey, todayKey), 0) : 0;
-  const normalizedMealsByDate =
-    dateShiftDays > 0
-      ? new Map(
-          [...mealsByDate.entries()].map(([dateKey, meals]) => [shiftDateKey(dateKey, -dateShiftDays), meals] as const)
-        )
-      : mealsByDate;
+  const normalizedMealsByDate = shiftMealRecordMap(mealRecordsByDate, dateShiftDays);
+  const normalizedGeneratedMealsByDate = shiftMealRecordMap(generatedMealRecordsByDate, dateShiftDays);
   const selectedDateIso = normalizeDateKey(requestedDateIso) ?? todayKey;
   const dailyWaterLiters = Number((user.agua_litros_obj ?? 0).toFixed(2));
   const waterConsumedLiters = Number(
@@ -600,9 +676,50 @@ function buildDashboardPlan(
     return toDateKey(entry.fecha) === selectedDateIso && entry.cumplido;
   });
 
-  const selectedMeals = (normalizedMealsByDate.get(selectedDateIso) ?? []).sort(
-    (a, b) => mealOrder.indexOf(a.mealType) - mealOrder.indexOf(b.mealType)
+  const selectedDateMealRecords = (normalizedMealsByDate.get(selectedDateIso) ?? []).sort(
+    (left, right) => mealOrder.indexOf(left.meal.mealType) - mealOrder.indexOf(right.meal.mealType)
   );
+  const visibleMealsByType = new Map(
+    selectedDateMealRecords
+      .filter((record) => !record.isGenerated || record.isApplied)
+      .map((record) => [record.meal.mealType, record.meal] as const)
+  );
+  const templateMealsByType = new Map(selectedDateMealRecords.map((record) => [record.meal.mealType, record] as const));
+  const selectedMeals = mealOrder.map((mealType, mealIndex) => {
+    const visibleMeal = visibleMealsByType.get(mealType);
+
+    if (visibleMeal) {
+      return visibleMeal;
+    }
+
+    const templateRecord = templateMealsByType.get(mealType);
+
+    if (templateRecord) {
+      return buildHiddenMealCopy(templateRecord.meal);
+    }
+
+    return buildEmptyMealShell(mealType, mealIndex);
+  });
+  const weeklyRecipes = [...normalizedGeneratedMealsByDate.entries()]
+    .sort(([leftDateKey], [rightDateKey]) => leftDateKey.localeCompare(rightDateKey))
+    .map(([dateKey, mealRecords]) => {
+      const date = parseDateKey(dateKey);
+
+      return {
+        dayLabel: formatWeekdayLabel(date),
+        dateIso: date.toISOString(),
+        meals: mealRecords
+          .filter((record) => record.isGenerated)
+          .map((record) => record.meal)
+          .sort((left, right) => mealOrder.indexOf(left.mealType) - mealOrder.indexOf(right.mealType)),
+      };
+    });
+  weeklyRecipes.sort((left, right) => {
+    const leftOrder = (new Date(left.dateIso).getUTCDay() + 6) % 7;
+    const rightOrder = (new Date(right.dateIso).getUTCDay() + 6) % 7;
+
+    return leftOrder - rightOrder || left.dateIso.localeCompare(right.dateIso);
+  });
   const dayTotals = selectedMeals.reduce<DashboardMacroTotals>(
     (acc, meal) => addTotals(acc, meal.totals),
     emptyTotals()
@@ -613,14 +730,18 @@ function buildDashboardPlan(
     carbs: round(user.carbohidratos_g_obj ?? 0),
     fats: round(user.grasas_g_obj ?? 0),
   };
-  const periodDays = [...normalizedMealsByDate.keys()].length;
+  const periodDays = normalizedGeneratedMealsByDate.size > 0 ? normalizedGeneratedMealsByDate.size : normalizedMealsByDate.size;
+  const weekTotals = [...normalizedMealsByDate.values()]
+    .flat()
+    .filter((record) => !record.isGenerated || record.isApplied)
+    .reduce<DashboardMacroTotals>((acc, record) => addTotals(acc, record.meal.totals), emptyTotals());
 
   return {
     objective: user.objetivo,
     carbLabel: getCarbLabel(user.objetivo),
     selectedDateIso,
     selectedDateLabel: formatRelativeDateLabel(selectedDateIso),
-    hasPlanForToday: normalizedMealsByDate.has(todayKey),
+    hasPlanForToday: normalizedGeneratedMealsByDate.has(todayKey) || normalizedMealsByDate.has(todayKey),
     periodDays,
     dailyWaterLiters,
     waterConsumedLiters,
@@ -635,6 +756,7 @@ function buildDashboardPlan(
       fats: round(dayTargets.fats * periodDays),
     },
     meals: selectedMeals,
+    weeklyRecipes,
   };
 }
 
@@ -667,6 +789,7 @@ function hasMeaningfulPlan(dashboard: UserDashboardPlan | null): boolean {
     return false;
   }
 
+  const hasGeneratedRecipes = dashboard.weeklyRecipes.length > 0;
   const hasMealNutrition = dashboard.meals.some(
     (meal) =>
       meal.totals.calories > 0 ||
@@ -675,7 +798,7 @@ function hasMeaningfulPlan(dashboard: UserDashboardPlan | null): boolean {
       meal.totals.fats > 0
   );
 
-  return hasMealNutrition || dashboard.dayTotals.calories > 0 || dashboard.weekTotals.calories > 0;
+  return hasGeneratedRecipes || hasMealNutrition || dashboard.dayTotals.calories > 0 || dashboard.weekTotals.calories > 0;
 }
 
 async function loadDashboardUser(userId: number) {

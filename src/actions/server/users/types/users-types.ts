@@ -107,10 +107,18 @@ export type UserDashboardMeal = {
   instructions: string[];
   instructionsSource: "database" | "generated";
   totals: DashboardMacroTotals;
+  summaryLabel?: string;
+  applied?: boolean;
   isShared?: boolean;
   sharedByName?: string | null;
   sharedAtIso?: string | null;
   createdByName?: string | null;
+};
+
+export type UserDashboardWeeklyRecipeDay = {
+  dayLabel: string;
+  dateIso: string;
+  meals: UserDashboardMeal[];
 };
 
 export type UserDashboardPlan = {
@@ -128,6 +136,7 @@ export type UserDashboardPlan = {
   weekTotals: DashboardMacroTotals;
   weekTargets: DashboardMacroTotals;
   meals: UserDashboardMeal[];
+  weeklyRecipes: UserDashboardWeeklyRecipeDay[];
 };
 
 export type UserDashboardProfile = {

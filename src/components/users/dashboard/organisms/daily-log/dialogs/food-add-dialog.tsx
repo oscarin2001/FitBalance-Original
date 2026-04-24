@@ -3,25 +3,31 @@
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { ArrowLeft, CalendarDays, ChevronRight, Loader2, Search, Sparkles, X } from "lucide-react";
+import { ArrowLeft, CalendarDays, ChevronRight, Loader2, Search, Sparkles } from "lucide-react";
 
 import { loadMyRecipesAction } from "@/actions/server/users/dashboard/recipes/my-recipes-actions";
 import { loadSharedRecipesAction, type SharedRecipeSummary } from "@/actions/server/users/dashboard/recipes/recipe-actions";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { toDateKey } from "@/lib/date-labels";
 
 import { createDashboardFoodAction, loadDailyLogFoodCatalogAction } from "@/actions/server/users/dashboard/daily-log/food-actions";
 import { addDashboardMealQuickEntryAction } from "@/actions/server/users/dashboard/daily-log/quick-entry-actions";
+import { applyGeneratedMealAction } from "@/actions/server/users/dashboard/daily-log/daily-log-actions";
 import type { DailyLogFoodOption } from "@/actions/server/users/dashboard/daily-log/types";
+import type { UserDashboardMeal, UserDashboardWeeklyRecipeDay } from "@/actions/server/users/types";
 import { SettingsScreenHeader } from "../../../settings/shared/settings-screen-header";
 import { FoodAddDialogActionsMenu } from "./food-add-dialog-actions-menu";
 import { FoodAddDialogCatalogTabs, type FoodAddDialogCatalogTab } from "./food-add-dialog-catalog-tabs";
+import { AiGeneratedRecipesAccordion } from "./ai-generated-recipes-accordion";
+import { GeneratedMealViewDialog } from "./generated-meal-view-dialog";
 import { FoodCreateDialog, type FoodCreateResult, type FoodCreateValues } from "./food-create-dialog";
+import { RecipeViewDialog } from "./recipe-view-dialog";
 import { RecipeCreateDialog } from "./recipe-create-dialog";
 import { FoodQuickEntryDialog, type FoodQuickEntryValues } from "./food-quick-entry-dialog";
 
@@ -45,7 +51,11 @@ type FoodAddDialogProps = {
   mealId: string | number;
   currentUserId?: number;
   initialFoods?: DailyLogFoodOption[];
+  generatedRecipeDays?: UserDashboardWeeklyRecipeDay[];
   selectedDateIso: string;
+  initialCatalogTab?: FoodAddDialogCatalogTab;
+  generatedRecipeDateIso?: string | null;
+  generatedRecipeMealType?: string | null;
   onOpenChange: (open: boolean) => void;
   onAddFood: (values: FoodAddValues) => Promise<FoodAddResult> | FoodAddResult;
 };
@@ -225,7 +235,11 @@ export function FoodAddDialog({
   mealId,
   currentUserId,
   initialFoods,
+  generatedRecipeDays,
   selectedDateIso,
+  initialCatalogTab,
+  generatedRecipeDateIso,
+  generatedRecipeMealType,
   onOpenChange,
   onAddFood,
 }: FoodAddDialogProps) {
@@ -243,6 +257,8 @@ export function FoodAddDialog({
   const [catalogTab, setCatalogTab] = useState<FoodAddDialogCatalogTab>("all");
   const [selectedFood, setSelectedFood] = useState<DailyLogFoodOption | null>(null);
   const [selectedRecipe, setSelectedRecipe] = useState<SharedRecipeSummary | null>(null);
+  const [selectedGeneratedMeal, setSelectedGeneratedMeal] = useState<UserDashboardMeal | null>(null);
+  const [selectedGeneratedMealDayLabel, setSelectedGeneratedMealDayLabel] = useState<string | null>(null);
   const [quantity, setQuantity] = useState("100");
   const [unit, setUnit] = useState<"g" | "ml">("g");
   const [addError, setAddError] = useState<string | null>(null);
@@ -278,13 +294,15 @@ export function FoodAddDialog({
     setAddError(null);
     setSelectedFood(null);
     setSearchValue("");
-    setCatalogTab("all");
+    setCatalogTab(initialCatalogTab ?? "all");
     setQuantity("100");
     setUnit("g");
     setFoodCreateOpen(false);
     setQuickEntryOpen(false);
     setRecipeCreateOpen(false);
     setSelectedRecipe(null);
+    setSelectedGeneratedMeal(null);
+    setSelectedGeneratedMealDayLabel(null);
 
     const loadRecipes = async () => {
       setIsLoadingRecipes(true);
@@ -363,7 +381,7 @@ export function FoodAddDialog({
       cancelled = true;
       window.removeEventListener(REFRESH_EVENT, handleRefresh);
     };
-  }, [currentUserId, initialFoods, open]);
+  }, [currentUserId, initialCatalogTab, initialFoods, open]);
 
   const filteredFoods = useMemo(() => {
     if (isRecipeCatalogTab(catalogTab)) {
@@ -413,14 +431,19 @@ export function FoodAddDialog({
       totalFilteredRecipes: filteredRecipes.length,
     };
   }, [deferredSearch.length, filteredRecipes]);
+  const hasGeneratedRecipeDays = (generatedRecipeDays?.length ?? 0) > 0;
+  const showGeneratedRecipeSection = catalogTab === "my-recipes" && hasGeneratedRecipeDays;
 
   const resultCountLabel = isRecipeTab
     ? isLoadingRecipes
       ? "Cargando recetas..."
-      : `${visibleRecipes.length} de ${totalFilteredRecipes} receta${totalFilteredRecipes === 1 ? "" : "s"}`
+      : showGeneratedRecipeSection
+        ? `${visibleRecipes.length} receta${visibleRecipes.length === 1 ? "" : "s"} propias · bloque IA debajo`
+        : `${visibleRecipes.length} de ${totalFilteredRecipes} receta${totalFilteredRecipes === 1 ? "" : "s"}`
     : isLoading
       ? "Cargando alimentos..."
       : `${visibleFoods.length} de ${totalFilteredFoods} resultado${totalFilteredFoods === 1 ? "" : "s"}`;
+  const showGeneratedRecipeSeparator = showGeneratedRecipeSection && (isLoadingRecipes || visibleRecipes.length > 0);
 
   const selectedNutrition = useMemo(() => {
     if (!selectedFood) {
@@ -452,7 +475,7 @@ export function FoodAddDialog({
     }
 
     return "No encontramos alimentos con ese criterio.";
-  }, [catalogTab, deferredSearch.length]);
+  }, [catalogTab, deferredSearch]);
 
   function handleBack() {
     if (selectedFood) {
@@ -463,6 +486,12 @@ export function FoodAddDialog({
 
     if (selectedRecipe) {
       setSelectedRecipe(null);
+      return;
+    }
+
+    if (selectedGeneratedMeal) {
+      setSelectedGeneratedMeal(null);
+      setSelectedGeneratedMealDayLabel(null);
       return;
     }
 
@@ -483,6 +512,47 @@ export function FoodAddDialog({
     setAddError(null);
     setCatalogTab("my-recipes");
     setRecipeCreateOpen(true);
+  }
+
+  function handleQuickEntryOpenChange(nextOpen: boolean) {
+    setQuickEntryOpen(nextOpen);
+
+    if (!nextOpen) {
+      onOpenChange(false);
+    }
+  }
+
+  function handleRecipeCreateOpenChange(nextOpen: boolean) {
+    setRecipeCreateOpen(nextOpen);
+
+    if (!nextOpen) {
+      onOpenChange(false);
+    }
+  }
+
+  function handleViewRecommendedRecipe() {
+    setAddError(null);
+    setCatalogTab("my-recipes");
+
+    const targetDateKey = selectedDateIso.trim();
+    const normalizedMealTitle = normalizeText(mealTitle);
+    const fallbackDayLabel = formatRecipeDateLabel(selectedDateIso) ?? mealTitle;
+
+    const matchingDay = generatedRecipeDays?.find((day) => toDateKey(new Date(day.dateIso)) === targetDateKey) ?? null;
+    const matchingMeal =
+      matchingDay?.meals.find((meal) => normalizeText(meal.mealType) === normalizedMealTitle) ??
+      matchingDay?.meals[0] ??
+      generatedRecipeDays?.find((day) => day.meals.length > 0)?.meals[0] ??
+      null;
+
+    if (matchingMeal && matchingDay) {
+      handleOpenGeneratedMeal({ dayLabel: matchingDay.dayLabel, meal: matchingMeal });
+      return;
+    }
+
+    if (matchingMeal) {
+      handleOpenGeneratedMeal({ dayLabel: matchingDay?.dayLabel ?? fallbackDayLabel, meal: matchingMeal });
+    }
   }
 
   async function handleSaveFood(values: FoodCreateValues): Promise<FoodCreateResult> {
@@ -541,6 +611,7 @@ export function FoodAddDialog({
 
       router.refresh();
       setQuickEntryOpen(false);
+        onOpenChange(false);
     }
 
     return result;
@@ -554,7 +625,28 @@ export function FoodAddDialog({
   }
 
   function handleSelectRecipe(recipe: SharedRecipeSummary) {
+    setSelectedGeneratedMeal(null);
+    setSelectedGeneratedMealDayLabel(null);
     setSelectedRecipe(recipe);
+  }
+
+  function handleOpenGeneratedMeal(input: { dayLabel: string; meal: UserDashboardMeal }) {
+    setSelectedRecipe(null);
+    setSelectedGeneratedMeal(input.meal);
+    setSelectedGeneratedMealDayLabel(input.dayLabel);
+  }
+
+  async function handleApplyGeneratedMeal(meal: UserDashboardMeal) {
+    const result = await applyGeneratedMealAction({
+      dateIso: selectedDateIso,
+      mealId: Number(meal.id),
+    });
+
+    if (result.ok) {
+      router.refresh();
+    }
+
+    return result;
   }
 
   async function handleAdd() {
@@ -692,6 +784,7 @@ export function FoodAddDialog({
                     onQuickEntry={handleOpenQuickEntry}
                     onCreateFood={handleOpenFoodCreate}
                     onCreateRecipe={handleOpenRecipeCreate}
+                    onViewAiRecipe={handleViewRecommendedRecipe}
                     className="ml-1"
                   />
                 </div>
@@ -783,60 +876,74 @@ export function FoodAddDialog({
                         </div>
                       ) : null}
 
+                      {showGeneratedRecipeSection ? (
+                        <AiGeneratedRecipesAccordion
+                          days={generatedRecipeDays ?? []}
+                          onOpenMeal={handleOpenGeneratedMeal}
+                          searchQuery={deferredSearch}
+                          preferredDateIso={generatedRecipeDateIso}
+                          preferredMealType={generatedRecipeMealType}
+                          className="px-4 py-4"
+                        />
+                      ) : null}
+
+                      {showGeneratedRecipeSeparator ? <Separator className="bg-slate-200/80" /> : null}
+
                       {isLoadingRecipes ? (
-                        <div className="grid gap-3 sm:grid-cols-2">
+                        <div className="grid gap-0 border-y border-slate-200/80 bg-white">
                           {Array.from({ length: 4 }).map((_, index) => (
-                            <div
-                              key={index}
-                              className="grid gap-3 rounded-[1.5rem] border border-slate-200/80 bg-white/85 p-4 shadow-sm shadow-slate-100"
-                            >
-                              <div className="h-4 w-40 rounded-full bg-slate-200/70" />
-                              <div className="h-3 w-28 rounded-full bg-slate-100" />
-                              <div className="h-20 rounded-[1.25rem] border border-slate-200 bg-slate-50" />
-                              <div className="h-8 rounded-full bg-slate-100" />
+                            <div key={index}>
+                              <div className="grid gap-3 px-4 py-4">
+                                <div className="h-4 w-40 rounded-full bg-slate-200/70" />
+                                <div className="h-3 w-28 rounded-full bg-slate-100" />
+                                <div className="h-4 w-56 rounded-full bg-slate-100" />
+                              </div>
+                              {index < 3 ? <Separator className="bg-slate-200/80" /> : null}
                             </div>
                           ))}
                         </div>
                       ) : visibleRecipes.length > 0 ? (
-                        <div className="grid gap-3 sm:grid-cols-2">
-                          {visibleRecipes.map((recipe) => (
-                            <button
-                              key={recipe.id}
-                              type="button"
-                              onClick={() => handleSelectRecipe(recipe)}
-                              className="grid gap-3 rounded-[1.5rem] border border-slate-200/80 bg-slate-50/80 p-4 text-left transition hover:-translate-y-0.5 hover:border-emerald-200 hover:bg-emerald-50/40"
-                            >
-                              <div className="flex items-start justify-between gap-3">
-                                <div className="min-w-0">
-                                  <h3 className="truncate text-[1.05rem] font-semibold tracking-tight text-slate-950">{recipe.name}</h3>
-                                  <p className="text-sm leading-6 text-slate-500">
-                                    {recipe.ingredientCount} ingredientes · {recipe.portions} porciones
-                                  </p>
+                        <div className="grid gap-0 border-y border-slate-200/80 bg-white">
+                          {visibleRecipes.map((recipe, index) => (
+                            <div key={recipe.id}>
+                              <button
+                                type="button"
+                                onClick={() => handleSelectRecipe(recipe)}
+                                className="grid gap-2 px-4 py-4 text-left transition hover:bg-slate-50"
+                              >
+                                <div className="flex items-start justify-between gap-3">
+                                  <div className="min-w-0">
+                                    <h3 className="truncate text-[1.05rem] font-semibold tracking-tight text-slate-950">
+                                      {recipe.name}
+                                    </h3>
+                                    <p className="text-sm leading-6 text-slate-500">
+                                      {recipe.ingredientCount} ingredientes · {recipe.portions} porciones
+                                    </p>
+                                  </div>
+
+                                  <Badge variant="outline" className="rounded-full">
+                                    {selectedRecipe?.id === recipe.id ? "Abierta" : "Ver"}
+                                  </Badge>
                                 </div>
 
-                                <Badge variant="outline" className="rounded-full">
-                                  {selectedRecipe?.id === recipe.id ? "Abierta" : "Ver"}
-                                </Badge>
-                              </div>
+                                <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-slate-500">
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                                    <CalendarDays className="size-3.5" />
+                                    {formatRecipeDateLabel(recipe.sharedAtIso) ?? (catalogTab === "my-recipes" ? "Receta propia" : "Receta compartida")}
+                                  </span>
+                                  <span className="inline-flex items-center gap-1 text-emerald-600">
+                                    Ver receta <ChevronRight className="size-4" />
+                                  </span>
+                                </div>
 
-                              <div className="grid gap-2 rounded-[1.25rem] border border-slate-200 bg-white p-3">
-                                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Macros</p>
                                 <p className="text-sm font-medium text-slate-700">{formatRecipeMacroLine(recipe)}</p>
-                              </div>
+                              </button>
 
-                              <div className="flex items-center justify-between gap-3 text-sm text-slate-500">
-                                <span className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                                  <CalendarDays className="size-3.5" />
-                                  {formatRecipeDateLabel(recipe.sharedAtIso) ?? (catalogTab === "my-recipes" ? "Receta propia" : "Receta compartida")}
-                                </span>
-                                <span className="inline-flex items-center gap-1 text-emerald-600">
-                                  Ver receta <ChevronRight className="size-4" />
-                                </span>
-                              </div>
-                            </button>
+                              {index < visibleRecipes.length - 1 ? <Separator className="bg-slate-200/80" /> : null}
+                            </div>
                           ))}
                         </div>
-                      ) : (
+                      ) : hasGeneratedRecipeDays ? null : (
                         <div className="px-4 py-8 text-center text-sm text-slate-600">{emptyCatalogMessage}</div>
                       )}
                     </>
@@ -945,141 +1052,29 @@ export function FoodAddDialog({
       </DialogContent>
     </Dialog>
 
-    <Dialog open={Boolean(selectedRecipe)} onOpenChange={(nextOpen) => !nextOpen && setSelectedRecipe(null)}>
-      <DialogContent
-        showCloseButton={false}
-        className={cn(
-          "z-[300] h-[calc(100dvh-1rem)] w-[min(100vw-1rem,44rem)] max-w-none overflow-hidden rounded-[1.75rem] border border-slate-200/80 bg-white p-0 shadow-2xl"
-        )}
-      >
-        <div className="flex h-full min-h-0 w-full flex-col bg-white">
-          <DialogHeader className="relative flex items-center justify-center border-b border-slate-200 px-4 py-3 pt-[env(safe-area-inset-top)]">
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              className="absolute left-3 rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-900"
-              onClick={() => setSelectedRecipe(null)}
-            >
-              <X className="size-5" />
-            </Button>
+    <RecipeViewDialog
+      recipe={selectedRecipe}
+      open={Boolean(selectedRecipe)}
+      onOpenChange={(nextOpen) => !nextOpen && setSelectedRecipe(null)}
+    />
 
-            <DialogTitle className="text-[1.05rem] font-semibold tracking-tight text-slate-950">
-              {selectedRecipe?.name}
-            </DialogTitle>
-            <DialogDescription className="sr-only">Detalle de receta</DialogDescription>
-          </DialogHeader>
-
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-            <div className="no-scrollbar flex-1 min-h-0 overflow-y-auto overscroll-y-contain touch-pan-y p-4">
-              {selectedRecipe ? (
-                <div className="grid gap-4 pb-4">
-                  <section className="grid gap-3 rounded-[1.5rem] border border-slate-200/80 bg-slate-50 px-4 py-4 shadow-sm shadow-slate-100">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge variant="outline" className="rounded-full">
-                        Receta
-                      </Badge>
-                      <Badge variant="secondary" className="rounded-full">
-                        {selectedRecipe.sharedAtIso ? "Compartida" : "Privada"}
-                      </Badge>
-                      <Badge variant="secondary" className="rounded-full">
-                        {selectedRecipe.ingredientCount} ingredientes
-                      </Badge>
-                      <Badge variant="secondary" className="rounded-full">
-                        {selectedRecipe.portions} porciones
-                      </Badge>
-                    </div>
-
-                    <div className="grid gap-2 rounded-[1.25rem] border border-slate-200 bg-white p-4">
-                      <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-400">Autor</p>
-                      <p className="text-base font-semibold text-slate-950">{selectedRecipe.createdByName ?? selectedRecipe.sharedByName}</p>
-                      {selectedRecipe.sharedAtIso ? (
-                        <p className="inline-flex items-center gap-1 text-sm text-slate-500">
-                          <CalendarDays className="size-3.5" />
-                          Compartida el {formatRecipeDateLabel(selectedRecipe.sharedAtIso)}
-                        </p>
-                      ) : (
-                        <p className="text-sm text-slate-500">Aun no la has compartido.</p>
-                      )}
-                    </div>
-
-                    <div className="rounded-[1.25rem] border border-slate-200 bg-white p-4 text-sm font-medium text-slate-700">
-                      {formatRecipeMacroLine(selectedRecipe)}
-                    </div>
-                  </section>
-
-                  <section className="grid gap-3 rounded-[1.5rem] border border-slate-200/80 bg-white p-4 shadow-sm shadow-slate-100">
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Ingredientes</p>
-                      <Badge variant="outline" className="rounded-full">
-                        {selectedRecipe.ingredients.length} items
-                      </Badge>
-                    </div>
-
-                    <div className="grid gap-3">
-                      {selectedRecipe.ingredients.map((ingredient, index) => (
-                        <div key={`${selectedRecipe.id}-${index}`} className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="min-w-0">
-                              <p className="truncate font-medium text-slate-900">{ingredient.name}</p>
-                              <p className="text-sm text-slate-500">{ingredient.category ?? "Ingrediente"}</p>
-                            </div>
-
-                            <div className="flex flex-col items-end gap-1 text-right">
-                              <span className="text-sm font-semibold text-slate-900">{ingredient.portionLabel}</span>
-                              {ingredient.isBeverage ? (
-                                <Badge variant="secondary" className="rounded-full text-[11px]">
-                                  Bebida
-                                </Badge>
-                              ) : null}
-                            </div>
-                          </div>
-
-                          <p className="mt-2 text-xs text-slate-500">
-                            {formatQuantity(ingredient.nutrition.calories)} kcal · {macroLabel(ingredient.nutrition.proteins, "g")} proteina · {macroLabel(ingredient.nutrition.carbs, "g")} carbohidratos · {macroLabel(ingredient.nutrition.fats, "g")} grasa
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </section>
-
-                  <Separator />
-
-                  <section className="grid gap-3 rounded-[1.5rem] border border-slate-200/80 bg-white p-4 shadow-sm shadow-slate-100">
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Preparacion</p>
-                      <Badge variant="outline" className="rounded-full">
-                        {selectedRecipe.instructions.length} pasos
-                      </Badge>
-                    </div>
-
-                    {selectedRecipe.instructions.length > 0 ? (
-                      <ol className="grid gap-3">
-                        {selectedRecipe.instructions.map((step, index) => (
-                          <li key={`${selectedRecipe.id}-step-${index}`} className="flex gap-3 rounded-2xl bg-slate-50 p-3">
-                            <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-teal-600 text-xs font-semibold text-white">
-                              {index + 1}
-                            </span>
-                            <p className="text-sm leading-6 text-slate-700">{step}</p>
-                          </li>
-                        ))}
-                      </ol>
-                    ) : (
-                      <p className="text-sm leading-6 text-slate-500">Esta receta aun no tiene pasos guardados.</p>
-                    )}
-                  </section>
-                </div>
-              ) : null}
-            </div>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+    <GeneratedMealViewDialog
+      meal={selectedGeneratedMeal}
+      dayLabel={selectedGeneratedMealDayLabel}
+      open={Boolean(selectedGeneratedMeal)}
+      onApply={handleApplyGeneratedMeal}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) {
+          setSelectedGeneratedMeal(null);
+          setSelectedGeneratedMealDayLabel(null);
+        }
+      }}
+    />
 
     <FoodQuickEntryDialog
       open={quickEntryOpen}
       mealTitle={mealTitle}
-      onOpenChange={setQuickEntryOpen}
+      onOpenChange={handleQuickEntryOpenChange}
       onSaveQuickEntry={handleSaveQuickEntry}
     />
 
@@ -1091,7 +1086,7 @@ export function FoodAddDialog({
 
     <RecipeCreateDialog
       open={recipeCreateOpen}
-      onOpenChange={setRecipeCreateOpen}
+      onOpenChange={handleRecipeCreateOpenChange}
       initialFoods={foods}
     />
 

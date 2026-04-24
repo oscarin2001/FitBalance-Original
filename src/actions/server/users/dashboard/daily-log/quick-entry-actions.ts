@@ -182,10 +182,12 @@ export async function addDashboardMealQuickEntryAction(input: unknown): Promise<
           typeof meal.overrides === "object" && meal.overrides !== null
             ? {
                 ...(meal.overrides as Record<string, unknown>),
+                applied: true,
                 foods: nextFoods,
                 mealNutrition: calculateTotals(nextFoods),
               }
             : {
+                applied: true,
                 foods: nextFoods,
                 mealNutrition: calculateTotals(nextFoods),
               },

@@ -34,6 +34,7 @@ import {
   updateDashboardMealIngredientAction,
 } from "@/actions/server/users/dashboard/daily-log"
 import type { DailyLogFoodOption } from "@/actions/server/users/dashboard/daily-log/types"
+import type { UserDashboardWeeklyRecipeDay } from "@/actions/server/users/types"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -88,6 +89,7 @@ export type DailyLogMeal = {
 
 export type DailyLogViewProps = {
   meals: DailyLogMeal[]
+  weeklyRecipes?: UserDashboardWeeklyRecipeDay[]
   dietProfile?: DailyLogProfile
   targets?: Partial<DailyLogTotals>
   sessionUserId: number
@@ -1008,6 +1010,7 @@ function DayCompletionCard({
 
 export function DailyLogView({
   meals,
+  weeklyRecipes,
   dietProfile,
   targets,
   sessionUserId,
@@ -1034,9 +1037,10 @@ export function DailyLogView({
     ingredientId: string | number
     ingredient: DailyLogIngredient
   } | null>(null)
-  const [addingFoodMeal, setAddingFoodMeal] = useState<{
+  const [activeMealDialog, setActiveMealDialog] = useState<{
     mealId: string | number
     mealTitle: string
+    mode: "food" | "recipe"
   } | null>(null)
 
   useEffect(() => {
@@ -1097,22 +1101,31 @@ export function DailyLogView({
   }
 
   function handleOpenFoodAdder(meal: DailyLogMeal) {
-    setAddingFoodMeal({
+    setActiveMealDialog({
       mealId: meal.id,
       mealTitle: meal.title,
+      mode: "food",
     })
 
     onAddMeal?.(meal)
   }
 
+  function handleOpenRecipeGenerator(meal: DailyLogMeal) {
+    setActiveMealDialog({
+      mealId: meal.id,
+      mealTitle: meal.title,
+      mode: "recipe",
+    })
+  }
+
   async function handleAddFood(values: FoodAddValues) {
-    if (!addingFoodMeal) {
+    if (!activeMealDialog) {
       return { ok: false, error: "No encontramos la comida a editar." }
     }
 
     const result = await addDashboardMealFoodAction({
       dateIso: selectedDateIso,
-      mealId: Number(addingFoodMeal.mealId),
+      mealId: Number(activeMealDialog.mealId),
       foodId: values.food.id,
       quantity: values.quantity,
       unit: values.unit,
@@ -1127,7 +1140,7 @@ export function DailyLogView({
 
     setVisibleMeals((previousMeals) => {
       return previousMeals.map((meal) => {
-        if (meal.id !== addingFoodMeal.mealId) {
+        if (meal.id !== activeMealDialog.mealId) {
           return meal
         }
 
@@ -1157,7 +1170,7 @@ export function DailyLogView({
       })
     })
 
-    setAddingFoodMeal(null)
+    setActiveMealDialog(null)
     router.refresh()
 
     return result
@@ -1270,15 +1283,27 @@ export function DailyLogView({
                       <p className="text-sm leading-6 text-slate-600">{summaryLabel}</p>
                     </div>
 
-                    <MealActionsMenu
-                      meal={meal}
-                      summaryLabel={summaryLabel}
-                      totals={totals}
-                      onAddMeal={handleOpenFoodAdder}
-                      onAdvanced={onAdvanced}
-                      onMorePress={onMorePress}
-                      onClearMeal={(mealItem) => handleClearMeal(mealItem.id)}
-                    />
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="h-8 rounded-full border-cyan-200 bg-cyan-50 px-3 text-[11px] font-semibold text-cyan-700 shadow-sm transition-colors hover:bg-cyan-100 hover:text-cyan-800 whitespace-nowrap"
+                        onClick={() => handleOpenRecipeGenerator(meal)}
+                      >
+                        <Sparkles className="size-3.5" />
+                        Generar {meal.title} con IA
+                      </Button>
+
+                      <MealActionsMenu
+                        meal={meal}
+                        summaryLabel={summaryLabel}
+                        totals={totals}
+                        onAddMeal={handleOpenFoodAdder}
+                        onAdvanced={onAdvanced}
+                        onMorePress={onMorePress}
+                        onClearMeal={(mealItem) => handleClearMeal(mealItem.id)}
+                      />
+                    </div>
                   </div>
                 </CardHeader>
 
@@ -1382,15 +1407,19 @@ export function DailyLogView({
       />
 
       <FoodAddDialog
-        open={Boolean(addingFoodMeal)}
-        mealTitle={addingFoodMeal?.mealTitle ?? ""}
-        mealId={addingFoodMeal?.mealId ?? ""}
+        open={Boolean(activeMealDialog)}
+        mealTitle={activeMealDialog?.mealTitle ?? ""}
+        mealId={activeMealDialog?.mealId ?? ""}
         currentUserId={sessionUserId}
         initialFoods={initialFoods}
+        generatedRecipeDays={weeklyRecipes ?? []}
         selectedDateIso={selectedDateIso}
+        initialCatalogTab={activeMealDialog?.mode === "recipe" ? "my-recipes" : "all"}
+        generatedRecipeDateIso={activeMealDialog?.mode === "recipe" ? selectedDateIso : null}
+        generatedRecipeMealType={activeMealDialog?.mode === "recipe" ? activeMealDialog.mealTitle : null}
         onOpenChange={(nextOpen) => {
           if (!nextOpen) {
-            setAddingFoodMeal(null)
+            setActiveMealDialog(null)
           }
         }}
         onAddFood={handleAddFood}

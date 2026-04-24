@@ -7,6 +7,7 @@ import {
   NotebookPen,
   Plus,
   Trophy,
+  Sparkles,
   UtensilsCrossed,
 } from "lucide-react";
 
@@ -23,6 +24,7 @@ type FoodAddDialogActionsMenuProps = {
   onQuickEntry?: () => void;
   onCreateFood?: () => void;
   onCreateRecipe?: () => void;
+  onViewAiRecipe?: () => void;
   onCreateMeal?: () => void;
   onCreatePlan?: () => void;
   onImportRecipe?: () => void;
@@ -43,6 +45,7 @@ export function FoodAddDialogActionsMenu({
   onQuickEntry,
   onCreateFood,
   onCreateRecipe,
+  onViewAiRecipe,
   onCreateMeal,
   onCreatePlan,
   onImportRecipe,
@@ -90,6 +93,14 @@ export function FoodAddDialogActionsMenu({
         >
           <MenuItemIcon icon={NotebookPen} />
           Crear receta
+        </DropdownMenuItem>
+
+        <DropdownMenuItem
+          onClick={() => onViewAiRecipe?.()}
+          className="gap-3 rounded-xl px-3 py-2.5 text-sm text-slate-700 outline-none transition-colors focus:!bg-slate-100 focus:!text-slate-950"
+        >
+          <MenuItemIcon icon={Sparkles} className="size-4 text-cyan-600" />
+          Ver receta recomendada por IA
         </DropdownMenuItem>
 
         <DropdownMenuSeparator className="mx-1 my-1 bg-slate-200" />

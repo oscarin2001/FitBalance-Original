@@ -194,6 +194,68 @@ export async function updateDailyHydrationAction(input: UpdateDailyHydrationInpu
   };
 }
 
+const generatedMealApplySchema = z
+  .object({
+    dateIso: z.string().trim().regex(/^\d{4}-\d{2}-\d{2}$/),
+    mealId: z.number().int().positive(),
+  })
+  .refine(
+    ({ dateIso }) => {
+      const parsedDate = parseDateKey(dateIso);
+      return !Number.isNaN(parsedDate.getTime()) && toDateKey(parsedDate) === dateIso;
+    },
+    {
+      message: "Fecha invalida.",
+      path: ["dateIso"],
+    }
+  );
+
+export type ApplyGeneratedMealInput = z.infer<typeof generatedMealApplySchema>;
+
+export async function applyGeneratedMealAction(input: ApplyGeneratedMealInput): Promise<ActionResult> {
+  const parsed = generatedMealApplySchema.safeParse(input);
+
+  if (!parsed.success) {
+    return buildActionError(parsed.error.issues[0]?.message ?? "Fecha invalida.");
+  }
+
+  const sessionResult = await requireSessionUser();
+  if (!sessionResult.ok) {
+    return sessionResult.error;
+  }
+
+  const meal = await loadEditablePlanMeal(parsed.data.mealId, sessionResult.sessionUser.userId);
+  if (!meal) {
+    return buildActionError("No encontramos la comida a editar.");
+  }
+
+  if (toDateKey(meal.fecha) !== parsed.data.dateIso) {
+    return buildActionError("No encontramos la comida a editar.");
+  }
+
+  await prisma.planComida.update({
+    where: { id: meal.id },
+    data: {
+      overrides:
+        typeof meal.overrides === "object" && meal.overrides !== null
+          ? {
+              ...(meal.overrides as Record<string, unknown>),
+              applied: true,
+            }
+          : {
+              applied: true,
+            },
+    },
+  });
+
+  revalidatePath("/users");
+
+  return {
+    ok: true,
+    message: "Receta aplicada.",
+  };
+}
+
 const ingredientEditSchema = z.object({
   dateIso: z.string().trim().regex(/^\d{4}-\d{2}-\d{2}$/),
   mealId: z.number().int().positive(),
@@ -279,10 +341,12 @@ export async function updateDashboardMealIngredientAction(input: unknown): Promi
         typeof meal.overrides === "object" && meal.overrides !== null
           ? {
               ...(meal.overrides as Record<string, unknown>),
+              applied: true,
               foods: nextFoods,
               mealNutrition: calculateTotals(nextFoods),
             }
           : {
+              applied: true,
               foods: nextFoods,
               mealNutrition: calculateTotals(nextFoods),
             },
@@ -334,10 +398,12 @@ export async function deleteDashboardMealIngredientAction(input: unknown): Promi
         typeof meal.overrides === "object" && meal.overrides !== null
           ? {
               ...(meal.overrides as Record<string, unknown>),
+              applied: true,
               foods: nextFoods,
               mealNutrition: calculateTotals(nextFoods),
             }
           : {
+              applied: true,
               foods: nextFoods,
               mealNutrition: calculateTotals(nextFoods),
             },
