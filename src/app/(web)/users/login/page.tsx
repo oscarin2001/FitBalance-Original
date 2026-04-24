@@ -1,8 +1,10 @@
+import type { Metadata } from "next";
+
 import { ensureLoginPageAccess } from "@/actions/server/users/pages";
 import { AuthShell } from "@/components/users/auth";
 import { LoginForm } from "@/components/users/login";
 
-export const metadata = {
+export const metadata: Metadata = {
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,

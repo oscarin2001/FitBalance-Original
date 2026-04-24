@@ -46,16 +46,16 @@ export default async function Home() {
         <section className="grid flex-1 items-center gap-8 py-8 lg:grid-cols-[1.15fr_0.85fr] lg:gap-12 lg:py-12">
           <div className="max-w-2xl">
             <Badge variant="outline" className="border-emerald-200 bg-white/80 text-emerald-700 shadow-sm">
-              Tu espacio para comer mejor sin complicarte
+              Tu espacio para ordenar tu comida sin complicarte
             </Badge>
 
             <h1 className="mt-5 max-w-xl text-4xl font-semibold tracking-tight text-balance text-slate-950 sm:text-5xl lg:text-6xl">
-              Un inicio bonito, fácil y pensado para tu rutina.
+              FitBalance te ayuda a empezar con orden, claridad y sin enredos.
             </h1>
 
             <p className="mt-4 max-w-xl text-base leading-7 text-slate-600 sm:text-lg">
-              Entra, completa lo básico y recibe una experiencia limpia, rápida y amigable en el celular.
-              Todo se ve mejor, se entiende mejor y se usa sin vueltas.
+              Entra, completa tus datos, elige tus comidas y sigue una guía simple para tu rutina.
+              Todo está pensado para verse bien en el celular y ser fácil de usar desde el primer momento.
             </p>
 
             <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -77,25 +77,25 @@ export default async function Home() {
             <div className="mt-8 grid gap-3 sm:grid-cols-3">
               <div className="rounded-2xl border border-white/70 bg-white/75 p-4 shadow-sm backdrop-blur">
                 <p className="text-sm font-medium text-slate-900">Rápido</p>
-                <p className="mt-1 text-sm leading-6 text-slate-600">Todo se entiende de inmediato.</p>
+                <p className="mt-1 text-sm leading-6 text-slate-600">Llegas, ves lo importante y sigues.</p>
               </div>
               <div className="rounded-2xl border border-white/70 bg-white/75 p-4 shadow-sm backdrop-blur">
                 <p className="text-sm font-medium text-slate-900">Bonito</p>
-                <p className="mt-1 text-sm leading-6 text-slate-600">Diseño limpio y cuidado.</p>
+                <p className="mt-1 text-sm leading-6 text-slate-600">Se siente ordenado y agradable.</p>
               </div>
               <div className="rounded-2xl border border-white/70 bg-white/75 p-4 shadow-sm backdrop-blur">
                 <p className="text-sm font-medium text-slate-900">Móvil primero</p>
-                <p className="mt-1 text-sm leading-6 text-slate-600">Se ve bien en cualquier pantalla.</p>
+                <p className="mt-1 text-sm leading-6 text-slate-600">Funciona bien en pantallas chicas y grandes.</p>
               </div>
             </div>
           </div>
 
           <Card className="border-emerald-100/80 bg-white/85 shadow-2xl shadow-emerald-900/5 backdrop-blur">
             <CardHeader className="space-y-3">
-              <Badge className="w-fit bg-emerald-100 text-emerald-700 hover:bg-emerald-100">Lo que vas a sentir</Badge>
-              <CardTitle className="text-2xl text-slate-950">Una entrada tranquila y agradable</CardTitle>
+              <Badge className="w-fit bg-emerald-100 text-emerald-700 hover:bg-emerald-100">Qué hace</Badge>
+              <CardTitle className="text-2xl text-slate-950">Te guía para empezar sin perderte</CardTitle>
               <CardDescription className="text-base leading-7">
-                Menos ruido visual, más claridad y un camino directo para empezar.
+                Primero entras, luego completas lo básico y después sigues con tu plan.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -105,9 +105,9 @@ export default async function Home() {
                     <CheckCircle2 className="size-4" />
                   </div>
                   <div>
-                    <p className="font-medium text-slate-900">Inicio claro</p>
+                    <p className="font-medium text-slate-900">Acceso claro</p>
                     <p className="mt-1 text-sm leading-6 text-slate-600">
-                      Un acceso simple para llegar a tu cuenta sin dar rodeos.
+                      Un botón directo para entrar a tu cuenta.
                     </p>
                   </div>
                 </div>
@@ -119,9 +119,9 @@ export default async function Home() {
                     <ShieldCheck className="size-4" />
                   </div>
                   <div>
-                    <p className="font-medium text-slate-900">Pensado para usar en el celular</p>
+                    <p className="font-medium text-slate-900">Pensado para el celular</p>
                     <p className="mt-1 text-sm leading-6 text-slate-600">
-                      Espacios amplios, botones grandes y lectura cómoda.
+                      Botones grandes, lectura cómoda y poco ruido visual.
                     </p>
                   </div>
                 </div>
@@ -160,26 +160,26 @@ export default async function Home() {
         <section className="grid gap-4 pb-2 sm:grid-cols-2 xl:grid-cols-4">
           <Card className="border-white/80 bg-white/70 shadow-sm backdrop-blur">
             <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Una sola entrada</CardTitle>
-              <CardDescription>Todo empieza en el acceso de login.</CardDescription>
+              <CardTitle className="text-lg">Empieza aquí</CardTitle>
+              <CardDescription>Entra con tu cuenta y sigue el recorrido.</CardDescription>
             </CardHeader>
           </Card>
           <Card className="border-white/80 bg-white/70 shadow-sm backdrop-blur">
             <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Visual limpio</CardTitle>
-              <CardDescription>Sin ruido, sin pasos innecesarios.</CardDescription>
+              <CardTitle className="text-lg">Todo claro</CardTitle>
+              <CardDescription>Ves lo importante desde el inicio.</CardDescription>
             </CardHeader>
           </Card>
           <Card className="border-white/80 bg-white/70 shadow-sm backdrop-blur">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg">Botón verde</CardTitle>
-              <CardDescription>El acceso principal queda claro y visible.</CardDescription>
+              <CardDescription>El acceso principal destaca de inmediato.</CardDescription>
             </CardHeader>
           </Card>
           <Card className="border-white/80 bg-white/70 shadow-sm backdrop-blur">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg">Listo para móvil</CardTitle>
-              <CardDescription>Se adapta bien a pantallas pequeñas y grandes.</CardDescription>
+              <CardDescription>Se adapta bien a pantallas chicas y grandes.</CardDescription>
             </CardHeader>
           </Card>
         </section>

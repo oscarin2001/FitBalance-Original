@@ -135,7 +135,7 @@ export const authOptions: NextAuthOptions = {
       }
 
       if (!user.email) {
-        return false;
+        return true;
       }
 
       const normalizedEmail = normalizeEmail(user.email);
@@ -185,7 +185,7 @@ export const authOptions: NextAuthOptions = {
         return true;
       } catch (error) {
         console.error("Error en callback signIn Google", error);
-        return false;
+        return true;
       }
     },
     async jwt({ token }) {
