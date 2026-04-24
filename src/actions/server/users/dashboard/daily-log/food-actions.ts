@@ -25,6 +25,22 @@ type LoadDailyLogFoodCatalogResult = ActionResult & {
   foods?: DailyLogFoodOption[];
 };
 
+type FoodOptionSource = {
+  id: number;
+  nombre: string;
+  categoria: string | null;
+  categoria_enum: string | null;
+  esCompartido?: boolean | null;
+  creadaPorId?: number | null;
+  calorias: number | null;
+  proteinas: number | null;
+  carbohidratos: number | null;
+  grasas: number | null;
+  porcion: string | null;
+  usuarios?: Array<{ prioridad: number | null }>;
+  recetas?: Array<{ id: number }>;
+};
+
 const foodCreateCategoryValues = FOOD_CREATE_CATEGORIES.map((category) => category.value) as [
   FoodCreateCategoryValue,
   ...FoodCreateCategoryValue[]
@@ -146,21 +162,7 @@ function hasUnknownPrismaArgumentError(error: unknown) {
   return error instanceof Error && /Unknown argument/i.test(error.message);
 }
 
-function mapFoodOption(food: {
-  id: number;
-  nombre: string;
-  categoria: string | null;
-  categoria_enum: string | null;
-  esCompartido?: boolean | null;
-  creadaPorId?: number | null;
-  calorias: number | null;
-  proteinas: number | null;
-  carbohidratos: number | null;
-  grasas: number | null;
-  porcion: string | null;
-  usuarios?: Array<{ prioridad: number | null }>;
-  recetas?: Array<{ id: number }>;
-}, currentUserId: number): DailyLogFoodOption {
+function mapFoodOption(food: FoodOptionSource, currentUserId: number): DailyLogFoodOption {
   const usersWithPriority = food.usuarios ?? [];
   const recipeLinks = food.recetas ?? [];
   const isMine = food.creadaPorId === currentUserId;
@@ -263,7 +265,7 @@ export async function createDashboardFoodAction(input: unknown): Promise<ActionR
     porcion: true,
   } as const;
 
-  let createdFood;
+  let createdFood: FoodOptionSource;
 
   try {
     createdFood = await prisma.alimento.create({
@@ -423,7 +425,7 @@ export async function loadDailyLogFoodCatalogAction(currentUserId?: number): Pro
       },
     });
 
-  let foods;
+  let foods: FoodOptionSource[];
 
   try {
     foods = await sharedQuery();
