@@ -1,16 +1,37 @@
-import { AlimentoCategoria } from "@prisma/client";
-
 import { prisma } from "@/actions/server/users/prisma";
 
 import type { SeedFoodRecord } from "../types";
 import { loadSeedFoodCatalog } from "./food-seed-catalog";
+
+type AlimentoCategoria =
+  | "Proteinas"
+  | "Carbohidratos"
+  | "Fibras"
+  | "Snacks"
+  | "Grasos"
+  | "Frutos"
+  | "Verduras"
+  | "BebidasInfusiones";
+
+const ALIMENTO_CATEGORIA_VALUES = new Set<AlimentoCategoria>([
+  "Proteinas",
+  "Carbohidratos",
+  "Fibras",
+  "Snacks",
+  "Grasos",
+  "Frutos",
+  "Verduras",
+  "BebidasInfusiones",
+]);
 
 function toEnumValue(value: string | null) {
   if (!value) {
     return null;
   }
 
-  return AlimentoCategoria[value as keyof typeof AlimentoCategoria] ?? null;
+  return ALIMENTO_CATEGORIA_VALUES.has(value as AlimentoCategoria)
+    ? (value as AlimentoCategoria)
+    : null;
 }
 
 type ExistingFoodRecord = {
