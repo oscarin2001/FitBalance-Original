@@ -10,7 +10,7 @@ import {
   saveOnboardingFoodPreferencesAction,
   saveOnboardingTrainingAction,
   saveOnboardingMetricsAction,
-} from "@/actions/server/users/onboarding/actions";
+} from "@/actions/server/users/onboarding/actions/onboarding-actions";
 import { FoodsStepForm } from "@/components/users/onboarding/organisms/foods-step-form";
 import { ProgressBanner } from "@/components/users/onboarding/molecules/progress-banner";
 import { MetricsStepForm } from "@/components/users/onboarding/organisms/metrics-step-form";

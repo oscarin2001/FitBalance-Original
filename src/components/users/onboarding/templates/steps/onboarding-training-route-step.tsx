@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { saveOnboardingTrainingAction } from "@/actions/server/users/onboarding/actions";
+import { saveOnboardingTrainingAction } from "@/actions/server/users/onboarding/actions/onboarding-actions";
 import type { TrainingDraft } from "@/actions/server/users/onboarding/types/onboarding-ui-types";
 import { TrainingStepForm } from "@/components/users/onboarding/organisms/training-step-form";
 

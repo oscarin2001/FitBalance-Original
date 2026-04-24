@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
-import { finalizeOnboardingAction } from "@/actions/server/users/onboarding/actions";
+import { finalizeOnboardingAction } from "@/actions/server/users/onboarding/actions/onboarding-actions";
 import type { MetricsDraft, TrainingDraft } from "@/actions/server/users/onboarding/types/onboarding-ui-types";
 import { SummaryStepCard } from "@/components/users/onboarding/organisms/summary-step-card";
 
