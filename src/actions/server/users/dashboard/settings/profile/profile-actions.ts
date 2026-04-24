@@ -1,6 +1,6 @@
 "use server";
 
-import { TipoEntrenamiento } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 import { z } from "zod";
 
 import { getSessionAppUser } from "@/actions/server/users/auth";
@@ -9,6 +9,8 @@ import { deriveExperienceLevelFromYears } from "@/actions/server/users/onboardin
 import { buildActionError, type ActionResult } from "@/actions/server/users/onboarding/validation/onboarding-validation";
 
 import type { DashboardProfileUpdateInput } from "./types";
+
+type TipoEntrenamiento = "Musculacion" | "Cardio" | "Mixto" | "No_entrena";
 
 type DashboardProfileUpdateData = Parameters<typeof prisma.usuario.update>[0]["data"];
 
@@ -44,7 +46,7 @@ function buildUpdateData(input: DashboardProfileUpdateInput): DashboardProfileUp
     case "pesoKg":
       return { peso_kg: input.value };
     case "tipoEntrenamiento":
-      return input.value === TipoEntrenamiento.No_entrena
+      return input.value === "No_entrena"
         ? { tipo_entrenamiento: input.value, frecuencia_entreno: 0, anos_entrenando: 0, nivel_experiencia: deriveExperienceLevelFromYears(0) }
         : { tipo_entrenamiento: input.value };
     case "frecuenciaEntreno":
