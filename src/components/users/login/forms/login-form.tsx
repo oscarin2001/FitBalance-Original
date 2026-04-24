@@ -54,10 +54,17 @@ export function LoginForm({
   }
 
   function handleGoogleSignIn() {
+    console.log("[Auth][Google] click sign-in", {
+      callbackUrl: "/users/onboarding",
+      mode,
+      email,
+    })
     setFeedback(undefined)
 
     startTransition(async () => {
-      await signIn("google", { callbackUrl: "/users/onboarding" })
+      console.log("[Auth][Google] calling next-auth signIn")
+      const result = await signIn("google", { callbackUrl: "/users/onboarding" })
+      console.log("[Auth][Google] signIn resolved", result)
     })
   }
 

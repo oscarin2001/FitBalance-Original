@@ -126,6 +126,12 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async signIn({ user, account }) {
+      console.log("[Auth][NextAuth] signIn callback", {
+        provider: account?.provider,
+        email: user.email,
+        name: user.name,
+      });
+
       if (account?.provider === "credentials") {
         return true;
       }
@@ -182,6 +188,12 @@ export const authOptions: NextAuthOptions = {
           });
         }
 
+        console.log("[Auth][NextAuth] signIn callback success", {
+          provider: account?.provider,
+          email: normalizedEmail,
+          created: !existing,
+        });
+
         return true;
       } catch (error) {
         console.error("Error en callback signIn Google", error);
@@ -189,6 +201,11 @@ export const authOptions: NextAuthOptions = {
       }
     },
     async jwt({ token }) {
+      console.log("[Auth][NextAuth] jwt callback", {
+        email: token.email,
+        userId: token.userId,
+      });
+
       if (!token.email || typeof token.email !== "string") {
         return token;
       }
@@ -225,6 +242,11 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
     async session({ session, token }) {
+      console.log("[Auth][NextAuth] session callback", {
+        email: token.email,
+        userId: token.userId,
+      });
+
       if (session.user) {
         session.user.id = token.userId ? String(token.userId) : undefined;
         session.user.email = typeof token.email === "string" ? token.email : session.user.email;
