@@ -144,7 +144,7 @@ export function OnboardingMobileWizard({
         return;
       }
 
-      router.replace("/users?pdf=1");
+      router.push("/users?pdf=1");
     });
   }
 

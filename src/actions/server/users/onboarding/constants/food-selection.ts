@@ -7,6 +7,55 @@ import {
   type FoodCategoryKey,
 } from "./food-catalog";
 
+const LEGACY_FOOD_ALIASES: Partial<Record<FoodCategoryKey, Record<string, string>>> = {
+  infusions: {
+    te: "Té verde",
+    "te blanco": "Té blanco",
+    "te negro": "Té negro",
+    "te rojo": "Té rojo",
+    manzanilla: "Infusión de manzanilla",
+    cedron: "Infusión de cedrón",
+    coca: "Infusión de coca",
+    muna: "Mate de muña",
+    muña: "Mate de muña",
+    "mate coca": "Mate de coca",
+    "mate de coca": "Mate de coca",
+  },
+};
+
+export function normalizeFoodToken(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .replace(/\s+/g, " ");
+}
+
+export function resolveCanonicalFoodName(category: FoodCategoryKey, value: string): string | null {
+  const trimmedValue = value.trim();
+
+  if (!trimmedValue) {
+    return null;
+  }
+
+  const foods = foodDataset[category] ?? [];
+  const exactMatch = foods.find((food) => food === trimmedValue);
+
+  if (exactMatch) {
+    return exactMatch;
+  }
+
+  const normalizedValue = normalizeFoodToken(trimmedValue);
+  const normalizedMatch = foods.find((food) => normalizeFoodToken(food) === normalizedValue);
+
+  if (normalizedMatch) {
+    return normalizedMatch;
+  }
+
+  return LEGACY_FOOD_ALIASES[category]?.[normalizedValue] ?? null;
+}
+
 const fullOnboardingDays = [
   "Lunes",
   "Martes",
@@ -32,7 +81,13 @@ export function createEmptyFoodsDraft(): FoodsDraft {
 }
 
 export function getAllowedFoodsByCategory(category: string): Set<string> {
-  return new Set(foodDataset[category as keyof typeof foodDataset] ?? []);
+  const categoryKey = category as FoodCategoryKey;
+  const foods = foodDataset[categoryKey] ?? [];
+
+  return new Set([
+    ...foods,
+    ...foods.map((food) => normalizeFoodToken(food)),
+  ]);
 }
 
 export function getMissingFoodCategories(preferencias: Record<string, string[]>): FoodCategoryKey[] {

@@ -1,7 +1,7 @@
 import {
   createEmptyFoodPreferences,
-  getAllowedFoodsByCategory,
   requiredFoodCategories,
+  resolveCanonicalFoodName,
 } from "../constants";
 import type { FoodPreferenceMap } from "../types";
 
@@ -15,7 +15,6 @@ export function normalizeSelectedFoods(raw: unknown): FoodPreferenceMap {
 
   return requiredFoodCategories.reduce<FoodPreferenceMap>((acc, category) => {
     const selected = foodMap[category];
-    const allowedFoods = getAllowedFoodsByCategory(category);
 
     if (!Array.isArray(selected)) {
       acc[category] = defaults[category] ?? [];
@@ -24,7 +23,8 @@ export function normalizeSelectedFoods(raw: unknown): FoodPreferenceMap {
 
     acc[category] = selected
       .filter((item): item is string => typeof item === "string" && item.trim().length > 0)
-      .filter((item) => allowedFoods.has(item))
+      .map((item) => resolveCanonicalFoodName(category, item))
+      .filter((item): item is string => item !== null)
       .slice(0, 10);
 
     return acc;

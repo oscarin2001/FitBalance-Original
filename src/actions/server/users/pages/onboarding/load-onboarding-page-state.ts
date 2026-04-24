@@ -2,9 +2,9 @@ import { requireSessionAppUser } from "@/actions/server/users/auth";
 import { redirectToLogin, redirectToUsers } from "@/actions/server/users/navigation";
 import {
   createEmptyFoodsDraft,
-  getAllowedFoodsByCategory,
   onboardingDays,
   requiredFoodCategories,
+  resolveCanonicalFoodName,
 } from "@/actions/server/users/onboarding/constants";
 import type {
   ActivityValue,
@@ -39,10 +39,10 @@ function normalizeFoodsDraft(preferenciasRaw: unknown, diasRaw: unknown): FoodsD
     (acc, category) => {
       const selectedValues = preferencias[category];
       if (Array.isArray(selectedValues)) {
-        const allowedFoods = getAllowedFoodsByCategory(category);
         acc[category] = selectedValues
           .filter((item): item is string => typeof item === "string" && item.trim().length > 0)
-          .filter((item) => allowedFoods.has(item))
+          .map((item) => resolveCanonicalFoodName(category, item))
+          .filter((item): item is string => item !== null)
           .slice(0, 10);
       } else {
         acc[category] = defaults.preferencias[category] ?? [];

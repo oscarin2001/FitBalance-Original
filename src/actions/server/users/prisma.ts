@@ -1,4 +1,5 @@
 import "server-only";
+
 import { PrismaLibSql } from "@prisma/adapter-libsql";
 import { PrismaClient } from "@prisma/client";
 
@@ -7,31 +8,56 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 function resolveDatabaseUrl() {
-  return process.env.DATABASE_URL ?? process.env.TURSO_DATABASE_URL ?? "file:./dev.db";
+  // 🔥 PRODUCCIÓN: SOLO DATABASE_URL (obligatorio)
+  if (process.env.NODE_ENV === "production") {
+    if (!process.env.DATABASE_URL) {
+      throw new Error(
+        "❌ DATABASE_URL no está definida en producción (Vercel Environment Variables)"
+      );
+    }
+    return process.env.DATABASE_URL;
+  }
+
+  // 🧪 LOCAL: usa SQLite
+  return process.env.TURSO_DATABASE_URL ?? "file:./dev.db";
 }
 
 function createPrismaClient() {
   const databaseUrl = resolveDatabaseUrl();
 
-  if (process.env.NODE_ENV === "production" && databaseUrl.startsWith("file:")) {
+  // 🚨 Protección extra: nunca permitir SQLite en producción
+  if (
+    process.env.NODE_ENV === "production" &&
+    databaseUrl.startsWith("file:")
+  ) {
     throw new Error(
-      "Prisma runtime is using a local SQLite file URL in production. Set DATABASE_URL to a remote LibSQL/Turso URL and DATABASE_AUTH_TOKEN in Vercel."
+      "❌ Prisma está usando SQLite en producción. Configura DATABASE_URL correctamente."
     );
   }
 
-  if (process.env.TURSO_DATABASE_URL?.startsWith("file:")) {
+  // 🧪 LOCAL (SQLite)
+  if (databaseUrl.startsWith("file:")) {
     return new PrismaClient({
       adapter: new PrismaLibSql({
-        url: process.env.TURSO_DATABASE_URL,
+        url: databaseUrl,
       }),
     });
   }
 
-  const [baseUrl, queryString = ""] = databaseUrl.split("?");
-  const authTokenFromUrl = new URLSearchParams(queryString).get("authToken") ?? undefined;
-  const authToken = process.env.DATABASE_AUTH_TOKEN ?? process.env.TURSO_AUTH_TOKEN ?? authTokenFromUrl;
+  // 🌍 PRODUCCIÓN (Turso / LibSQL)
+  const authToken =
+    process.env.DATABASE_AUTH_TOKEN ??
+    process.env.TURSO_AUTH_TOKEN ??
+    undefined;
+
+  if (process.env.NODE_ENV === "production" && !authToken) {
+    throw new Error(
+      "❌ DATABASE_AUTH_TOKEN no está definido en producción"
+    );
+  }
+
   const adapter = new PrismaLibSql({
-    url: baseUrl,
+    url: databaseUrl,
     authToken,
   });
 

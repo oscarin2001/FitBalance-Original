@@ -39,7 +39,7 @@ export function OnboardingSummaryRouteStep({
           return;
         }
 
-        router.replace("/users?pdf=1");
+        router.push("/users?pdf=1");
       } catch {
         setMessage("No se pudo conectar con el servidor. Intenta nuevamente.");
       }

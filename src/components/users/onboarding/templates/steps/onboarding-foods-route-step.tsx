@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 
 import { onboardingDays } from "@/actions/server/users/onboarding/constants";
+import { resolveCanonicalFoodName } from "@/actions/server/users/onboarding/constants";
 import { saveOnboardingFoodPreferencesAction } from "@/actions/server/users/onboarding/actions/onboarding-actions";
 import type { FoodsDraft } from "@/actions/server/users/onboarding/types/onboarding-ui-types";
 import { FoodsStepForm } from "@/components/users/onboarding/organisms/foods-step-form";
@@ -18,6 +19,20 @@ type OnboardingFoodsRouteStepProps = {
 };
 
 const FOODS_DRAFT_KEY = "fitbalance:onboarding:foods:v2";
+function normalizeFoodDraftSelection(preferencias: FoodsDraft["preferencias"]): FoodsDraft["preferencias"] {
+  return Object.entries(preferencias).reduce<FoodsDraft["preferencias"]>((acc, [category, foods]) => {
+    acc[category] = Array.isArray(foods)
+      ? foods
+          .filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+          .map((item) => resolveCanonicalFoodName(category as keyof FoodsDraft["preferencias"], item))
+          .filter((item): item is string => item !== null)
+          .slice(0, 10)
+      : [];
+
+    return acc;
+  }, {} as FoodsDraft["preferencias"]);
+}
+
 const mergeFoodsDraft = (base: FoodsDraft, draft: FoodsDraft) => ({
   ...base,
   ...draft,
@@ -42,7 +57,10 @@ export function OnboardingFoodsRouteStep({
   const { value: foods, setValue: setFoods, clearDraft } = useOnboardingDraft({
     storageKey: draftKey,
     initialValue: initialFoods,
-    merge: mergeFoodsDraft,
+    merge: (base, draft) => ({
+      ...mergeFoodsDraft(base, draft),
+      preferencias: normalizeFoodDraftSelection(mergeFoodsDraft(base, draft).preferencias),
+    }),
   });
 
   function handleToggleFood(category: string, food: string) {
