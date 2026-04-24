@@ -7,6 +7,17 @@ import { normalizeSelectedFoods } from "@/actions/server/users/onboarding/logic/
 import { resolveMealPlanTargets } from "@/actions/server/users/onboarding/logic/meal-plan-targets";
 import { prisma } from "@/actions/server/users/prisma";
 
+type DietPlanObjetivo = "Bajar_grasa" | "Ganar_musculo" | "Mantener";
+type DietPlanNivelActividad = "Sedentario" | "Ligero" | "Moderado" | "Activo" | "Muy_activo";
+
+function mapObjetivoForDietPlan(objetivo: string): DietPlanObjetivo {
+  return objetivo === "Mantenimiento" ? "Mantener" : (objetivo as DietPlanObjetivo);
+}
+
+function mapNivelActividadForDietPlan(nivelActividad: string): DietPlanNivelActividad {
+  return nivelActividad === "Extremo" ? "Muy_activo" : (nivelActividad as DietPlanNivelActividad);
+}
+
 export const runtime = "nodejs";
 
 export async function POST() {
@@ -93,8 +104,8 @@ export async function POST() {
 
     const generation = await generateDietPlan({
       userName: `${user.nombre} ${user.apellido}`,
-      objetivo: user.objetivo,
-      nivelActividad: user.nivel_actividad,
+      objetivo: mapObjetivoForDietPlan(user.objetivo),
+      nivelActividad: mapNivelActividadForDietPlan(user.nivel_actividad),
       velocidadCambio: user.velocidad_cambio,
       targets,
       preferencias: selectedPreferences,

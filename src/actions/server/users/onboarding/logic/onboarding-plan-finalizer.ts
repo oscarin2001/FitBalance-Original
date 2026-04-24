@@ -18,6 +18,17 @@ import { normalizeSelectedFoods } from "./food-preferences";
 import { persistWeeklyMealPlan } from "./weekly-meal-plan-persistence";
 import { resolveMealPlanTargets } from "./meal-plan-targets";
 
+type DietPlanObjetivo = "Bajar_grasa" | "Ganar_musculo" | "Mantener";
+type DietPlanNivelActividad = "Sedentario" | "Ligero" | "Moderado" | "Activo" | "Muy_activo";
+
+function mapObjetivoForDietPlan(objetivo: string): DietPlanObjetivo {
+  return objetivo === "Mantenimiento" ? "Mantener" : (objetivo as DietPlanObjetivo);
+}
+
+function mapNivelActividadForDietPlan(nivelActividad: string): DietPlanNivelActividad {
+  return nivelActividad === "Extremo" ? "Muy_activo" : (nivelActividad as DietPlanNivelActividad);
+}
+
 export async function finalizeOnboardingPlan(sessionUser: SessionAppUser): Promise<ActionResult> {
   try {
     const usuario = await prisma.usuario.findUnique({
@@ -100,8 +111,8 @@ export async function finalizeOnboardingPlan(sessionUser: SessionAppUser): Promi
     const userName = `${sessionUser.nombre} ${sessionUser.apellido}`;
     const generatedDiet = await generateDietPlan({
       userName,
-      objetivo: usuario.objetivo,
-      nivelActividad: usuario.nivel_actividad,
+      objetivo: mapObjetivoForDietPlan(usuario.objetivo),
+      nivelActividad: mapNivelActividadForDietPlan(usuario.nivel_actividad),
       velocidadCambio: usuario.velocidad_cambio,
       tipoEntrenamiento: usuario.tipo_entrenamiento,
       nivelExperiencia: usuario.nivel_experiencia,

@@ -1,6 +1,5 @@
 "use server";
 
-import type { Prisma } from "@prisma/client";
 import { z } from "zod";
 
 import { getSessionAppUser } from "@/actions/server/users/auth";
@@ -10,7 +9,11 @@ import { buildActionError, type ActionResult } from "@/actions/server/users/onbo
 
 import type { DashboardProfileUpdateInput } from "./types";
 
-type TipoEntrenamiento = "Musculacion" | "Cardio" | "Mixto" | "No_entrena";
+type TipoEntrenamiento =
+  | "Fuerza"
+  | "Cardio"
+  | "Mixto"
+  | "Ninguno";
 
 type DashboardProfileUpdateData = Parameters<typeof prisma.usuario.update>[0]["data"];
 

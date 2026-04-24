@@ -1,4 +1,12 @@
-import { Objetivo, VelocidadCambio } from "@prisma/client";
+type Objetivo =
+  | "Bajar_grasa"
+  | "Ganar_musculo"
+  | "Mantener";
+
+type VelocidadCambio =
+  | "Lento"
+  | "Moderado"
+  | "Rapido";
 
 import { onboardingDays } from "../constants";
 import { buildFallbackMealInstructions } from "@/components/users/dashboard/lib/meal-formatters";
@@ -263,14 +271,14 @@ function buildMealFoods(
 
   if (mealType === "Almuerzo" || mealType === "Cena") {
     const vegetablePoolForMeal =
-      objective === Objetivo.Bajar_grasa ? vegetablePool : preferFoods(vegetablePool, lightProteinHints, true);
+      objective === "Bajar_grasa" ? vegetablePool : preferFoods(vegetablePool, lightProteinHints, true);
     foods.push({
       name: pickUniqueFood(vegetablePoolForMeal, dayIndex, usedNames, vegetableFallback),
       role: "vegetable",
     });
   }
 
-  if (mealType === "Desayuno" || mealType === "Snack" || objective === Objetivo.Ganar_musculo) {
+  if (mealType === "Desayuno" || mealType === "Snack" || objective === "Ganar_musculo") {
     foods.push({
       name: pickUniqueFood(fruitPool, dayIndex + 3, usedNames, fruitFallback),
       role: "fruit",

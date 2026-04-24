@@ -1,7 +1,23 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import type { NivelActividad, Objetivo, VelocidadCambio } from "@prisma/client";
+
+type NivelActividad =
+  | "Sedentario"
+  | "Ligero"
+  | "Moderado"
+  | "Activo"
+  | "Muy_activo";
+
+type Objetivo =
+  | "Bajar_grasa"
+  | "Ganar_musculo"
+  | "Mantener";
+
+type VelocidadCambio =
+  | "Lento"
+  | "Moderado"
+  | "Rapido";
 
 import {
   buildFallbackMealInstructions,
