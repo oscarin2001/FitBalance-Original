@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 
 import { onboardingDays } from "@/actions/server/users/onboarding/constants";
-import { saveOnboardingFoodPreferencesAction } from "@/actions/server/users/onboarding";
+import { saveOnboardingFoodPreferencesAction } from "@/actions/server/users/onboarding/actions";
 import type { FoodsDraft } from "@/actions/server/users/onboarding/types/onboarding-ui-types";
 import { FoodsStepForm } from "@/components/users/onboarding/organisms/foods-step-form";
 

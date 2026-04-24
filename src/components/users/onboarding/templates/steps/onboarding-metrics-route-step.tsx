@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
-import { saveOnboardingMetricsAction } from "@/actions/server/users/onboarding";
+import { saveOnboardingMetricsAction } from "@/actions/server/users/onboarding/actions";
 import type { MetricsDraft } from "@/actions/server/users/onboarding/types/onboarding-ui-types";
 import { MetricsStepForm } from "@/components/users/onboarding/organisms/metrics-step-form";
 
