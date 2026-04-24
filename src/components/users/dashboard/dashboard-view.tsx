@@ -150,7 +150,7 @@ export function DashboardView({
   function handleDateChange(dateIso: string) {
     const nextParams = new URLSearchParams(searchParams.toString());
     nextParams.set("date", dateIso);
-    router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
+    router.push(`${pathname}?${nextParams.toString()}`, { scroll: false });
   }
 
   const bottomNavbar = (
