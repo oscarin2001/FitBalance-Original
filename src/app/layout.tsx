@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "FitBalance",
-  description: "Base Next.js + Prisma para gestion de usuarios y nutricion.",
+  description: "FitBalance: nutricion, macros, alimentos bolivianos y seguimiento de progreso fisico.",
   applicationName: "FitBalance",
   icons: {
     icon: "/favicon.ico",
