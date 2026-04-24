@@ -134,23 +134,23 @@ export function parseCreateUserInput(body: unknown): ParseResult<CreateUserInput
   }
 
   const nombre = parseRequiredString(body.nombre, "nombre");
-  if (!nombre.ok) {
-    return nombre;
+  if (nombre.ok === false) {
+    return { ok: false, error: nombre.error };
   }
 
   const apellido = parseRequiredString(body.apellido, "apellido");
-  if (!apellido.ok) {
-    return apellido;
+  if (apellido.ok === false) {
+    return { ok: false, error: apellido.error };
   }
 
   const fechaNacimiento = parseRequiredDate(body.fecha_nacimiento);
-  if (!fechaNacimiento.ok) {
-    return fechaNacimiento;
+  if (fechaNacimiento.ok === false) {
+    return { ok: false, error: fechaNacimiento.error };
   }
 
   const sexo = parseRequiredString(body.sexo, "sexo");
-  if (!sexo.ok) {
-    return sexo;
+  if (sexo.ok === false) {
+    return { ok: false, error: sexo.error };
   }
 
   if (typeof body.terminos_aceptados !== "boolean") {

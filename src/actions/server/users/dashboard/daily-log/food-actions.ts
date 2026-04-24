@@ -336,7 +336,7 @@ export async function createDashboardFoodAction(input: unknown): Promise<ActionR
 export async function loadDailyLogFoodCatalogAction(currentUserId?: number): Promise<LoadDailyLogFoodCatalogResult> {
   const catalogUserResult = await resolveCatalogUserId(currentUserId);
   if (!catalogUserResult.ok) {
-    return buildActionError(catalogUserResult.error);
+    return buildActionError("Tu sesion expiro. Inicia sesion nuevamente.");
   }
   const catalogUserId = catalogUserResult.userId;
 
