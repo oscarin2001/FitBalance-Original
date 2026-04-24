@@ -1,6 +1,9 @@
-import { NivelActividad, Objetivo, VelocidadCambio } from "@prisma/client";
-
 import type { AiTargets } from "../types/onboarding-action-types";
+import type {
+  ActivityValue as NivelActividad,
+  ObjectiveValue as Objetivo,
+  SpeedValue as VelocidadCambio,
+} from "../types/onboarding-ui-types";
 import {
   buildObjectiveFallbackMacros,
   getCalorieAdjustmentKcal,
@@ -81,7 +84,7 @@ function getExtraHydrationLiters(nivelActividad: NivelActividad, objetivo: Objet
     Extremo: 0.75,
   };
 
-  const satietyBoost = objetivo === Objetivo.Bajar_grasa ? 0.5 : 0;
+  const satietyBoost = objetivo === "Bajar_grasa" ? 0.5 : 0;
   return activityExtraMap[nivelActividad] + satietyBoost;
 }
 

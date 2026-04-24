@@ -1,4 +1,7 @@
-import { Objetivo, VelocidadCambio } from "@prisma/client";
+import type {
+  ObjectiveValue as Objetivo,
+  SpeedValue as VelocidadCambio,
+} from "../types/onboarding-ui-types";
 
 type MacroPlan = {
   proteinPerKg: number;
@@ -62,7 +65,7 @@ export function getNutritionGuardrails(input: {
 }): NutritionGuardrails {
   const bodyClass = getBodyClass(input.bmi);
 
-  if (input.objective === Objetivo.Bajar_grasa) {
+  if (input.objective === "Bajar_grasa") {
     const speedCap = byDifficulty(input.speed, { low: 0.15, medium: 0.2, high: 0.25 });
     const bodyCap: Record<BodyClass, number> = {
       very_thin: 0,
@@ -93,7 +96,7 @@ export function getNutritionGuardrails(input: {
     };
   }
 
-  if (input.objective === Objetivo.Ganar_musculo) {
+  if (input.objective === "Ganar_musculo") {
     const speedCap = byDifficulty(input.speed, { low: 0.05, medium: 0.1, high: 0.15 });
     const bodyCap: Record<BodyClass, number> = {
       very_thin: 0.15,
@@ -135,7 +138,7 @@ function getWeeklyWeightDeltaKg(
   objetivo: Objetivo,
   velocidadCambio: VelocidadCambio
 ): number {
-  if (objetivo === Objetivo.Bajar_grasa) {
+  if (objetivo === "Bajar_grasa") {
     return byDifficulty(velocidadCambio, {
       low: 0.25,
       medium: 0.5,
@@ -143,7 +146,7 @@ function getWeeklyWeightDeltaKg(
     });
   }
 
-  if (objetivo === Objetivo.Ganar_musculo) {
+  if (objetivo === "Ganar_musculo") {
     return byDifficulty(velocidadCambio, {
       low: 0.15,
       medium: 0.3,
@@ -161,11 +164,11 @@ export function getCalorieAdjustmentKcal(
   const weeklyDeltaKg = getWeeklyWeightDeltaKg(objetivo, velocidadCambio);
   const dailyDeltaKcal = Math.round((weeklyDeltaKg * KCAL_PER_KG) / DAYS_PER_WEEK);
 
-  if (objetivo === Objetivo.Bajar_grasa) {
+  if (objetivo === "Bajar_grasa") {
     return -dailyDeltaKcal;
   }
 
-  if (objetivo === Objetivo.Ganar_musculo) {
+  if (objetivo === "Ganar_musculo") {
     return dailyDeltaKcal;
   }
 
@@ -173,14 +176,14 @@ export function getCalorieAdjustmentKcal(
 }
 
 export function getMacroPlan(objetivo: Objetivo, velocidadCambio: VelocidadCambio): MacroPlan {
-  if (objetivo === Objetivo.Bajar_grasa) {
+  if (objetivo === "Bajar_grasa") {
     return {
       proteinPerKg: byDifficulty(velocidadCambio, { low: 2.0, medium: 2.1, high: 2.2 }),
       fatPerKg: byDifficulty(velocidadCambio, { low: 0.7, medium: 0.75, high: 0.8 }),
     };
   }
 
-  if (objetivo === Objetivo.Ganar_musculo) {
+  if (objetivo === "Ganar_musculo") {
     return {
       proteinPerKg: byDifficulty(velocidadCambio, { low: 2.0, medium: 2.1, high: 2.2 }),
       fatPerKg: byDifficulty(velocidadCambio, { low: 0.95, medium: 1.0, high: 1.05 }),
@@ -202,9 +205,9 @@ export function buildObjectiveFallbackMacros(
   carbohidratosG: number;
 } {
   const ratios =
-    objetivo === Objetivo.Bajar_grasa
+    objetivo === "Bajar_grasa"
       ? { protein: 0.35, fat: 0.3, carbs: 0.35 }
-      : objetivo === Objetivo.Ganar_musculo
+      : objetivo === "Ganar_musculo"
         ? { protein: 0.3, fat: 0.25, carbs: 0.45 }
         : { protein: 0.3, fat: 0.3, carbs: 0.4 };
 
@@ -216,5 +219,5 @@ export function buildObjectiveFallbackMacros(
 }
 
 export function buildBalancedFallbackMacros(kcalObjetivo: number) {
-  return buildObjectiveFallbackMacros(kcalObjetivo, Objetivo.Mantenimiento);
+  return buildObjectiveFallbackMacros(kcalObjetivo, "Mantenimiento");
 }

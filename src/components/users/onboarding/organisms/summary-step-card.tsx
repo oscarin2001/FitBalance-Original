@@ -8,7 +8,7 @@ import type { MetricsDraft, TrainingDraft } from "@/actions/server/users/onboard
 import { capitalizeWords, SummaryProfileCard, SummaryTermsDialog } from "./summary-step-card-meta";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { calculateAgeFromBirthDate } from "@/actions/server/users/onboarding/logic";
+import { calculateAgeFromBirthDate } from "@/actions/server/users/onboarding/logic/client";
 
 const pendingStages = [
   "Validando tus datos y preferencias...",

@@ -1,5 +1,5 @@
 import type { MetricsDraft } from "@/actions/server/users/onboarding/types/onboarding-ui-types";
-import type { MetricsDraftFieldErrors } from "@/actions/server/users/onboarding/logic";
+import type { MetricsDraftFieldErrors } from "@/actions/server/users/onboarding/logic/client";
 
 export type MetricsStepFormFieldErrors = MetricsDraftFieldErrors;
 

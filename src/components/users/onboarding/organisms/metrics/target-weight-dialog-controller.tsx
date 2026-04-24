@@ -3,7 +3,7 @@ import type { UseFormReturn } from "react-hook-form";
 import type {
   MetricsFormValues,
   WeightUnit,
-} from "@/actions/server/users/onboarding/logic";
+} from "@/actions/server/users/onboarding/logic/client";
 import type { MetricsDraft } from "@/actions/server/users/onboarding/types/onboarding-ui-types";
 
 import { TargetWeightDialog } from "./target-weight-dialog";

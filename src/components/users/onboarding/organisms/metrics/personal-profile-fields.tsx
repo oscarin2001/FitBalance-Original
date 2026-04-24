@@ -5,7 +5,7 @@ import {
   getHeightLimits,
   type HeightUnit,
   type MetricsFormValues,
-} from "@/actions/server/users/onboarding/logic";
+} from "@/actions/server/users/onboarding/logic/client";
 import type { MetricsDraft } from "@/actions/server/users/onboarding/types/onboarding-ui-types";
 import {
   FormControl,

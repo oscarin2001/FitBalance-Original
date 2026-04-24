@@ -11,7 +11,7 @@ import {
   type HeightUnit,
   type MetricsFormValues,
   type WeightUnit,
-} from "@/actions/server/users/onboarding/logic";
+} from "@/actions/server/users/onboarding/logic/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form } from "@/components/ui/form";

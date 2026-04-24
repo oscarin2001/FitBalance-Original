@@ -14,7 +14,7 @@ import {
   type HeightUnit,
   type MetricsFormValues,
   type WeightUnit,
-} from "@/actions/server/users/onboarding/logic";
+} from "@/actions/server/users/onboarding/logic/client";
 import type { MetricsDraft } from "@/actions/server/users/onboarding/types/onboarding-ui-types";
 import {
   calculateHealthyWeightRangeKg,

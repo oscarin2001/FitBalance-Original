@@ -6,7 +6,7 @@ import type {
   ActivityValue,
   MetricsDraft,
 } from "@/actions/server/users/onboarding/types/onboarding-ui-types";
-import type { MetricsFormValues } from "@/actions/server/users/onboarding/logic";
+import type { MetricsFormValues } from "@/actions/server/users/onboarding/logic/client";
 import {
   FormControl,
   FormField,

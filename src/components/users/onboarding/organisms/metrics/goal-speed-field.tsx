@@ -3,7 +3,7 @@ import type { UseFormReturn } from "react-hook-form";
 
 import {
   type MetricsFormValues,
-} from "@/actions/server/users/onboarding/logic";
+} from "@/actions/server/users/onboarding/logic/client";
 import {
   speedGuides,
   speedOptions,
