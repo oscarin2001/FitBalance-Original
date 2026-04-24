@@ -10,7 +10,6 @@ import { BottomNavbar, type BottomNavbarTab } from "./bottom-navbar";
 import { DashboardSkeleton } from "./dashboard-skeleton";
 import { DashboardSettingsSidebar } from "./organisms/dashboard-settings-sidebar";
 import { DashboardSummaryCard } from "./organisms/dashboard-summary-card";
-import { CommunityRecipesPanel } from "./organisms/community-recipes-panel";
 import {
   DailyLogView,
   type DailyLogMeal,
@@ -35,7 +34,7 @@ function resolveDailyLogProfile(objective: UserDashboardPlan["objective"]): Dail
 }
 
 function resolveDashboardTab(value: string | null): BottomNavbarTab {
-  if (value === "metas" || value === "comidas" || value === "comunidad") {
+  if (value === "metas" || value === "comidas") {
     return value;
   }
 
@@ -47,6 +46,7 @@ function mapDashboardMeals(meals: UserDashboardPlan["meals"]): DailyLogMeal[] {
     id: meal.id,
     title: meal.mealType,
     recipeName: meal.recipeName,
+    instructionsSource: meal.instructionsSource,
     summaryLabel: meal.summaryLabel,
     ingredients: meal.ingredients.map((ingredient, index) => ({
       id: `${meal.id}-${index}`,
@@ -243,10 +243,6 @@ export function DashboardView({
                 dayCompleted={dashboard.dayCompleted}
                 showHeader={false}
               />
-            </section>
-
-            <section id="comunidad" className="scroll-mt-24 pb-6">
-              <CommunityRecipesPanel />
             </section>
           </div>
         </main>

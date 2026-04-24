@@ -1,13 +1,15 @@
 "use client";
 
+import type { ComponentType } from "react";
+
 import {
   FileDown,
-  Flame,
   MoreHorizontal,
   NotebookPen,
   Plus,
   Trophy,
   Sparkles,
+  Zap,
   UtensilsCrossed,
 } from "lucide-react";
 
@@ -33,7 +35,7 @@ type FoodAddDialogActionsMenuProps = {
 
 const premiumIconClassName = "size-4 text-emerald-600";
 
-function MenuItemIcon({ icon: Icon, className }: { icon: typeof Flame; className?: string }) {
+function MenuItemIcon({ icon: Icon, className }: { icon: ComponentType<{ className?: string }>; className?: string }) {
   return (
     <span className="flex size-4 items-center justify-center text-slate-500">
       <Icon className={className ?? "size-4"} />
@@ -71,10 +73,10 @@ export function FoodAddDialogActionsMenu({
       >
         <DropdownMenuItem
           onClick={() => onQuickEntry?.()}
-          className="gap-3 rounded-xl px-3 py-2.5 text-sm text-slate-700 outline-none transition-colors focus:!bg-slate-100 focus:!text-slate-950"
+          className="gap-3 rounded-xl border border-emerald-100 bg-gradient-to-r from-emerald-50 to-cyan-50 px-3 py-2.5 text-sm font-semibold text-emerald-800 outline-none transition-colors hover:from-emerald-100 hover:to-cyan-100 focus:!bg-emerald-50 focus:!text-emerald-900"
         >
-          <MenuItemIcon icon={Flame} />
-          Entrada rápida
+          <MenuItemIcon icon={Zap} className="size-4 text-emerald-600" />
+          Entrada rápida de alimentos
         </DropdownMenuItem>
 
         <DropdownMenuSeparator className="mx-1 my-1 bg-slate-200" />

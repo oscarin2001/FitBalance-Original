@@ -1,17 +1,16 @@
 "use client";
 
-import { BarChart3, LayoutGrid, Plus, Users, Utensils } from "lucide-react";
+import { BarChart3, LayoutGrid, Plus, Utensils } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-export type BottomNavbarTab = "registro" | "metas" | "comidas" | "comunidad";
+export type BottomNavbarTab = "registro" | "metas" | "comidas";
 
 const NAV_ITEMS = [
   { key: "registro", label: "Registro", icon: LayoutGrid },
   { key: "metas", label: "Metas", icon: BarChart3 },
   { key: "comidas", label: "Comidas", icon: Utensils },
-  { key: "comunidad", label: "Comunidad", icon: Users },
 ] as const;
 
 type BottomNavbarProps = {

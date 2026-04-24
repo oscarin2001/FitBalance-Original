@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, type CSSProperties } from "react"
+import { useEffect, useRef, useState, type CSSProperties } from "react"
 import { useRouter } from "next/navigation"
 
 import {
@@ -25,6 +25,8 @@ import {
   Trash2,
   Zap,
 } from "lucide-react"
+import { motion } from "framer-motion"
+import Confetti from "react-confetti"
 
 import {
   deleteDashboardMealIngredientAction,
@@ -82,6 +84,7 @@ export type DailyLogMeal = {
   id: string | number
   title: string
   recipeName?: string
+  instructionsSource?: "database" | "generated"
   ingredients: DailyLogIngredient[]
   targets?: Partial<DailyLogTotals>
   summaryLabel?: string
@@ -513,12 +516,14 @@ function WaterGlass({
       disabled={disabled}
       onClick={onPress}
     >
-      <span
+      <motion.span
         className={cn(
-          "absolute inset-x-1 bottom-1 rounded-b-[0.45rem] rounded-t-[0.2rem] bg-transparent transition-colors",
+          "absolute inset-x-1 bottom-1 rounded-b-[0.45rem] rounded-t-[0.2rem] bg-transparent",
           filled && "bg-gradient-to-t from-cyan-400/60 via-cyan-300/70 to-cyan-100/80"
         )}
-        style={{ height: filled ? "64%" : "0%" }}
+        initial={false}
+        animate={{ height: filled ? "64%" : "0%", opacity: filled ? 1 : 0.15 }}
+        transition={{ type: "spring", stiffness: 220, damping: 24 }}
       />
     </button>
   )
@@ -950,10 +955,34 @@ function DayCompletionCard({
   const router = useRouter();
   const [isCompleted, setIsCompleted] = useState(dayCompleted);
   const [isSaving, setIsSaving] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false)
+  const [viewport, setViewport] = useState({ width: 0, height: 0 })
+  const celebrationTimerRef = useRef<number | null>(null)
 
   useEffect(() => {
     setIsCompleted(dayCompleted);
   }, [dayCompleted, selectedDateIso]);
+
+  useEffect(() => {
+    setShowCelebration(false)
+  }, [selectedDateIso])
+
+  useEffect(() => {
+    function updateViewport() {
+      setViewport({ width: window.innerWidth, height: window.innerHeight })
+    }
+
+    updateViewport()
+    window.addEventListener("resize", updateViewport)
+
+    return () => {
+      window.removeEventListener("resize", updateViewport)
+
+      if (celebrationTimerRef.current) {
+        window.clearTimeout(celebrationTimerRef.current)
+      }
+    }
+  }, [])
 
   function handleCompletionChange(nextCompleted: boolean) {
     if (isSaving || nextCompleted === isCompleted) {
@@ -977,34 +1006,62 @@ function DayCompletionCard({
         return;
       }
 
+      if (nextCompleted) {
+        setShowCelebration(true)
+
+        if (celebrationTimerRef.current) {
+          window.clearTimeout(celebrationTimerRef.current)
+        }
+
+        celebrationTimerRef.current = window.setTimeout(() => {
+          setShowCelebration(false)
+        }, 4200)
+      }
+
       setIsSaving(false);
       router.refresh();
     })();
   }
 
   return (
-    <Card className="overflow-hidden rounded-[1.75rem] border border-slate-200/80 bg-white/96 shadow-[0_18px_50px_-32px_rgba(15,23,42,0.35)]">
-      <CardContent className="flex items-center justify-between gap-4 px-4 py-4">
-        <div className="min-w-0">
-          <p className={cn("text-sm font-semibold transition-colors", isCompleted ? "text-emerald-600" : "text-slate-900")}>
-            Terminé registro de comida por hoy
-          </p>
+    <>
+      {showCelebration && viewport.width > 0 && viewport.height > 0 ? (
+        <div className="pointer-events-none fixed inset-0 z-[120]">
+          <Confetti
+            width={viewport.width}
+            height={viewport.height}
+            numberOfPieces={220}
+            recycle={false}
+            run={showCelebration}
+            gravity={0.18}
+            colors={["#06b6d4", "#14b8a6", "#10b981", "#f59e0b"]}
+          />
         </div>
+      ) : null}
 
-        <Switch
-          checked={isCompleted}
-          disabled={isSaving}
-          aria-label="Cambiar cierre del día"
-          onCheckedChange={handleCompletionChange}
-          className={cn(
-            "transition-all",
-            isCompleted
-              ? "border-transparent bg-gradient-to-r from-teal-500 via-emerald-500 to-cyan-500 shadow-[0_8px_18px_-12px_rgba(6,182,212,0.85)]"
-              : "border-slate-300/80 bg-slate-300/80"
-          )}
-        />
-      </CardContent>
-    </Card>
+      <Card className="overflow-hidden rounded-[1.75rem] border border-slate-200/80 bg-white/96 shadow-[0_18px_50px_-32px_rgba(15,23,42,0.35)]">
+        <CardContent className="flex items-center justify-between gap-4 px-4 py-4">
+          <div className="min-w-0">
+            <p className={cn("text-sm font-semibold transition-colors", isCompleted ? "text-emerald-600" : "text-slate-900")}>
+              Terminé registro de comida por hoy
+            </p>
+          </div>
+
+          <Switch
+            checked={isCompleted}
+            disabled={isSaving}
+            aria-label="Cambiar cierre del día"
+            onCheckedChange={handleCompletionChange}
+            className={cn(
+              "transition-all",
+              isCompleted
+                ? "border-transparent bg-gradient-to-r from-teal-500 via-emerald-500 to-cyan-500 shadow-[0_8px_18px_-12px_rgba(6,182,212,0.85)]"
+                : "border-slate-300/80 bg-slate-300/80"
+            )}
+          />
+        </CardContent>
+      </Card>
+    </>
   )
 }
 
@@ -1284,15 +1341,16 @@ export function DailyLogView({
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="h-8 rounded-full border-cyan-200 bg-cyan-50 px-3 text-[11px] font-semibold text-cyan-700 shadow-sm transition-colors hover:bg-cyan-100 hover:text-cyan-800 whitespace-nowrap"
-                        onClick={() => handleOpenRecipeGenerator(meal)}
-                      >
-                        <Sparkles className="size-3.5" />
-                        Generar {meal.title} con IA
-                      </Button>
+                      {meal.instructionsSource !== "generated" ? (
+                        <Button
+                          type="button"
+                          className="h-8 rounded-full bg-gradient-to-r from-cyan-500 via-teal-500 to-emerald-500 px-3 text-[11px] font-semibold text-white shadow-[0_12px_24px_-12px_rgba(6,182,212,0.75)] ring-1 ring-cyan-200 transition-transform hover:-translate-y-0.5 hover:shadow-[0_16px_28px_-12px_rgba(6,182,212,0.82)] whitespace-nowrap"
+                          onClick={() => handleOpenRecipeGenerator(meal)}
+                        >
+                          <Sparkles className="size-3.5" />
+                          Crear receta con IA
+                        </Button>
+                      ) : null}
 
                       <MealActionsMenu
                         meal={meal}
