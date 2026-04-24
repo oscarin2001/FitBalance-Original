@@ -227,6 +227,7 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.userId ? String(token.userId) : undefined;
+        session.user.email = typeof token.email === "string" ? token.email : session.user.email;
         session.user.onboardingCompleted = Boolean(token.onboardingCompleted);
         session.user.onboardingStep =
           typeof token.onboardingStep === "string" ? token.onboardingStep : null;

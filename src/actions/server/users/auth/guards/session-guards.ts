@@ -41,12 +41,58 @@ async function findSessionUserByEmail(email: string): Promise<SessionAppUser | n
   };
 }
 
+async function findSessionUserById(userId: string): Promise<SessionAppUser | null> {
+  const numericUserId = Number(userId);
+
+  if (!Number.isInteger(numericUserId) || numericUserId <= 0) {
+    return null;
+  }
+
+  const usuario = await prisma.usuario.findUnique({
+    where: { id: numericUserId },
+    select: {
+      id: true,
+      nombre: true,
+      apellido: true,
+      pais: true,
+      onboarding_completed: true,
+      onboarding_step: true,
+      auth: {
+        select: {
+          id: true,
+          email: true,
+        },
+      },
+    },
+  });
+
+  if (!usuario?.auth) {
+    return null;
+  }
+
+  return {
+    userId: usuario.id,
+    authId: usuario.auth.id,
+    email: usuario.auth.email,
+    nombre: usuario.nombre,
+    apellido: usuario.apellido,
+    pais: usuario.pais,
+    onboardingCompleted: usuario.onboarding_completed,
+    onboardingStep: usuario.onboarding_step,
+  };
+}
+
 export async function getSessionAppUser(): Promise<SessionAppUser | null> {
   const session = await getServerSession(authOptions);
   const email = session?.user?.email;
+  const userId = session?.user?.id;
 
   if (!email) {
-    return null;
+    if (!userId) {
+      return null;
+    }
+
+    return findSessionUserById(userId);
   }
 
   return findSessionUserByEmail(email);
