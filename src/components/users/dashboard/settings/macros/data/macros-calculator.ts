@@ -1,6 +1,9 @@
-import type { Objetivo } from "@prisma/client";
-
 import type { DashboardMacroTotals } from "@/actions/server/users/types";
+
+export type Objetivo =
+  | "Bajar_grasa"
+  | "Ganar_musculo"
+  | "Mantenimiento";
 
 export type MacroPresetMode = "Personalizado" | "Balanceado" | "Definicion" | "Volumen";
 

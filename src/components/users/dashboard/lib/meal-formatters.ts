@@ -1,9 +1,9 @@
-import type { ComidaTipo } from "@prisma/client";
-
 import type {
   DashboardMacroTotals,
   UserDashboardMealIngredient,
 } from "@/actions/server/users/types";
+
+export type ComidaTipo = "Desayuno" | "Almuerzo" | "Snack" | "Cena";
 
 type MealInstructionIngredient = {
   name: string;
