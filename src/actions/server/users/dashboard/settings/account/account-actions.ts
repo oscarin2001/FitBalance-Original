@@ -1,7 +1,6 @@
 "use server";
 
 import { z } from "zod";
-import { Prisma } from "@prisma/client";
 
 import { getSessionAppUser } from "@/actions/server/users/auth";
 import { sendVerificationEmail } from "@/actions/server/users/auth/mailer";
@@ -18,6 +17,9 @@ import type {
 } from "./types";
 
 const verificationTokenTtlMs = 1000 * 60 * 60 * 24;
+const Prisma: any = {
+  DbNull: null,
+};
 
 const passwordSchema = z
   .string()

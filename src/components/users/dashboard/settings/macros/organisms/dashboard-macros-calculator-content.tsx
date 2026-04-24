@@ -275,13 +275,15 @@ export function DashboardMacrosCalculatorContent({ dashboard, profile }: Dashboa
     setPdfDownloadError(null);
     setIsDownloadingPdf(true);
 
-    const result = await downloadCurrentNutritionPlanPdf(profileName);
+    try {
+      const result = await downloadCurrentNutritionPlanPdf(profileName);
 
-    if (!result.ok) {
-      setPdfDownloadError(result.error);
+      if (result.ok === false) {
+        setPdfDownloadError(result.error);
+      }
+    } finally {
+      setIsDownloadingPdf(false);
     }
-
-    setIsDownloadingPdf(false);
   }
 
   return (

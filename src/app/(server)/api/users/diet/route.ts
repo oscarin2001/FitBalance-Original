@@ -12,7 +12,7 @@ export const runtime = "nodejs";
 export async function POST() {
   try {
     const auth = await requireApiSessionUser();
-    if (!auth.ok) {
+    if (auth.ok === false) {
       return auth.response;
     }
 

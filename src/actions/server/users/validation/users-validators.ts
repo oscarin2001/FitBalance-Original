@@ -188,32 +188,32 @@ export function parseUpdateUserInput(body: unknown): ParseResult<UpdateUserInput
 
   if (body.nombre !== undefined) {
     const parsed = parseRequiredString(body.nombre, "nombre");
-    if (!parsed.ok) {
-      return parsed;
+    if (parsed.ok === false) {
+      return { ok: false, error: parsed.error };
     }
     data.nombre = parsed.data;
   }
 
   if (body.apellido !== undefined) {
     const parsed = parseRequiredString(body.apellido, "apellido");
-    if (!parsed.ok) {
-      return parsed;
+    if (parsed.ok === false) {
+      return { ok: false, error: parsed.error };
     }
     data.apellido = parsed.data;
   }
 
   if (body.fecha_nacimiento !== undefined) {
     const parsed = parseRequiredDate(body.fecha_nacimiento);
-    if (!parsed.ok) {
-      return parsed;
+    if (parsed.ok === false) {
+      return { ok: false, error: parsed.error };
     }
     data.fecha_nacimiento = parsed.data;
   }
 
   if (body.sexo !== undefined) {
     const parsed = parseRequiredString(body.sexo, "sexo");
-    if (!parsed.ok) {
-      return parsed;
+    if (parsed.ok === false) {
+      return { ok: false, error: parsed.error };
     }
     data.sexo = parsed.data;
   }
