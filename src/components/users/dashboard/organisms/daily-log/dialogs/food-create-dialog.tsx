@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { MAX_INGREDIENT_QUANTITY } from "@/actions/server/users/dashboard/daily-log/constants";
-import { formatQuantityLabel, scaleNutrition } from "@/actions/server/users/dashboard/daily-log/meal-helpers";
+import { formatQuantityLabel, scaleNutrition } from "@/actions/server/users/dashboard/daily-log/meal-formatters";
 
 type FoodCreateValues = {
   name: string;

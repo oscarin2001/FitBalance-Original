@@ -28,13 +28,8 @@ import {
 import { motion } from "framer-motion"
 import Confetti from "react-confetti"
 
-import {
-  deleteDashboardMealIngredientAction,
-  addDashboardMealFoodAction,
-  updateDailyComplianceAction,
-  updateDailyHydrationAction,
-  updateDashboardMealIngredientAction,
-} from "@/actions/server/users/dashboard/daily-log"
+import { addDashboardMealFoodAction } from "@/actions/server/users/dashboard/daily-log/food-actions"
+import { deleteDashboardMealIngredientAction, updateDailyComplianceAction, updateDailyHydrationAction, updateDashboardMealIngredientAction } from "@/actions/server/users/dashboard/daily-log/daily-log-actions"
 import type { DailyLogFoodOption } from "@/actions/server/users/dashboard/daily-log/types"
 import type { UserDashboardWeeklyRecipeDay } from "@/actions/server/users/types"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
