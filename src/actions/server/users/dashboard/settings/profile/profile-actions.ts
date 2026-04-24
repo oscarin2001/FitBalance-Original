@@ -1,6 +1,6 @@
 "use server";
 
-import { Prisma, TipoEntrenamiento } from "@prisma/client";
+import { TipoEntrenamiento } from "@prisma/client";
 import { z } from "zod";
 
 import { getSessionAppUser } from "@/actions/server/users/auth";
@@ -9,6 +9,8 @@ import { deriveExperienceLevelFromYears } from "@/actions/server/users/onboardin
 import { buildActionError, type ActionResult } from "@/actions/server/users/onboarding/validation/onboarding-validation";
 
 import type { DashboardProfileUpdateInput } from "./types";
+
+type DashboardProfileUpdateData = Parameters<typeof prisma.usuario.update>[0]["data"];
 
 const nameSchema = z.string().trim().min(2).max(50).regex(/^[A-Za-zÀ-ÿ' -]+$/);
 
@@ -27,7 +29,7 @@ const updateSchema = z.discriminatedUnion("field", [
   z.object({ field: z.literal("anosEntrenando"), value: z.number().min(0).max(60) }),
 ]);
 
-function buildUpdateData(input: DashboardProfileUpdateInput): Prisma.UsuarioUpdateInput {
+function buildUpdateData(input: DashboardProfileUpdateInput): DashboardProfileUpdateData {
   switch (input.field) {
     case "nombre":
       return { nombre: input.value };
