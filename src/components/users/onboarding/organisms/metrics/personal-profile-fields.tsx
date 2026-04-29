@@ -1,7 +1,6 @@
 import type { UseFormReturn } from "react-hook-form";
 
 import {
-  ageOptions,
   getHeightLimits,
   type HeightUnit,
   type MetricsFormValues,
@@ -41,6 +40,9 @@ function getFieldErrorMessage(
   return errors?.[field];
 }
 
+const AGE_MIN = 14;
+const AGE_MAX = 90;
+
 export function PersonalProfileFields({
   form,
   fieldErrors,
@@ -59,24 +61,20 @@ export function PersonalProfileFields({
           <FormItem>
             <FormLabel>Edad</FormLabel>
             <FormControl>
-              <Select
-                value={field.value}
-                onValueChange={(nextValue) => {
-                  field.onChange(nextValue);
+              <Input
+                {...field}
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                min={AGE_MIN}
+                max={AGE_MAX}
+                placeholder="18"
+                className="h-12 rounded-2xl border-slate-200 bg-slate-50/70 px-4"
+                onChange={(event) => {
+                  field.onChange(event.target.value.replace(/[^\d]/g, "").slice(0, 2));
                   onClearError("fechaNacimiento");
                 }}
-              >
-                <SelectTrigger className="h-12 w-full rounded-2xl border-slate-200 bg-slate-50/70 px-4">
-                  <SelectValue placeholder="Edad" />
-                </SelectTrigger>
-                <SelectContent>
-                  {ageOptions.map((age) => (
-                    <SelectItem key={age} value={age}>
-                      {age}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              />
             </FormControl>
             <FormMessage>{getFieldErrorMessage(fieldErrors, "fechaNacimiento")}</FormMessage>
           </FormItem>

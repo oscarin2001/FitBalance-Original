@@ -69,38 +69,38 @@ export function GoalsProgressSection({
 
   const historyWindow = useMemo(() => getWeightHistoryWindow(weightHistory, range), [range, weightHistory]);
   const historyItems = useMemo(() => [...historyWindow].reverse(), [historyWindow]);
-  const visibleCurrentWeightKg = historyWindow.at(-1)?.weightKg ?? currentWeightKg ?? targetWeightKg ?? 0;
-  const visibleInitialWeightKg = historyWindow[0]?.weightKg ?? visibleCurrentWeightKg;
-  const resolvedTargetWeightKg = targetWeightKg ?? visibleCurrentWeightKg;
+  const journeyInitialWeightKg = weightHistory[0]?.weightKg ?? currentWeightKg ?? targetWeightKg ?? 0;
+  const journeyCurrentWeightKg = weightHistory.at(-1)?.weightKg ?? currentWeightKg ?? targetWeightKg ?? journeyInitialWeightKg;
+  const resolvedTargetWeightKg = targetWeightKg ?? journeyCurrentWeightKg;
 
   const projectionData = useMemo(
     () =>
       buildProjectionSeries({
         historyEntries: weightHistory,
-        currentWeightKg: visibleCurrentWeightKg,
+        currentWeightKg: journeyCurrentWeightKg,
         targetWeightKg: resolvedTargetWeightKg,
         unit,
         rangeKey: range,
       }),
-    [range, resolvedTargetWeightKg, unit, visibleCurrentWeightKg, weightHistory]
+    [range, resolvedTargetWeightKg, unit, journeyCurrentWeightKg, weightHistory]
   );
 
   const chartDomain = useMemo(() => {
     const weights = projectionData.map((item) => item.weight);
     const targetChartWeight = formatChartWeight(resolvedTargetWeightKg, unit);
-    const currentChartWeight = formatChartWeight(visibleCurrentWeightKg, unit);
+    const currentChartWeight = formatChartWeight(journeyCurrentWeightKg, unit);
     const minimum = Math.min(...weights, currentChartWeight, targetChartWeight);
     const maximum = Math.max(...weights, currentChartWeight, targetChartWeight);
 
     return [Math.max(minimum - 5, 0), maximum + 5] as const;
-  }, [projectionData, resolvedTargetWeightKg, unit, visibleCurrentWeightKg]);
+  }, [projectionData, resolvedTargetWeightKg, unit, journeyCurrentWeightKg]);
 
-  const goalLabel = formatGoalLabel(visibleCurrentWeightKg, targetWeightKg, unit);
-  const differenceKg = visibleCurrentWeightKg - visibleInitialWeightKg;
+  const goalLabel = formatGoalLabel(journeyCurrentWeightKg, targetWeightKg, unit);
+  const differenceKg = journeyCurrentWeightKg - journeyInitialWeightKg;
   const differenceLabel = formatWeightDifference(differenceKg, unit);
   const changeAmountLabel = formatWeight(Math.abs(differenceKg), unit);
-  const progressDenominator = Math.abs(visibleInitialWeightKg - resolvedTargetWeightKg);
-  const progressNumerator = Math.abs(visibleInitialWeightKg - visibleCurrentWeightKg);
+  const progressDenominator = Math.abs(journeyInitialWeightKg - resolvedTargetWeightKg);
+  const progressNumerator = Math.abs(journeyInitialWeightKg - journeyCurrentWeightKg);
   const progressRatio =
     historyWindow.length === 0
       ? 0
@@ -112,10 +112,10 @@ export function GoalsProgressSection({
     historyWindow.length === 0
       ? "Aun no registraste peso en este periodo."
       : differenceKg < 0
-        ? `Has perdido ${changeAmountLabel} desde el comienzo del periodo seleccionado.`
+        ? `Has perdido ${changeAmountLabel} desde tu primer registro.`
         : differenceKg > 0
-          ? `Has ganado ${changeAmountLabel} desde el comienzo del periodo seleccionado.`
-          : "Tu peso se mantiene estable en este período.";
+          ? `Has ganado ${changeAmountLabel} desde tu primer registro.`
+          : "Tu peso se mantiene estable desde tu primer registro.";
   const ProgressIcon = differenceKg < 0 ? TrendingDown : differenceKg > 0 ? TrendingUp : Scale;
 
   async function handleDeleteEntry(entry: UserWeightHistoryEntry) {
@@ -244,8 +244,8 @@ export function GoalsProgressSection({
               </div>
 
               <div className="mt-3 grid grid-cols-3 divide-x divide-slate-200 px-3 pb-4">
-                <SummaryCell label="Inicial" value={formatWeight(visibleInitialWeightKg, unit)} />
-                <SummaryCell label="Actual" value={formatWeight(visibleCurrentWeightKg, unit)} />
+                <SummaryCell label="Inicial" value={formatWeight(journeyInitialWeightKg, unit)} />
+                <SummaryCell label="Actual" value={formatWeight(journeyCurrentWeightKg, unit)} />
                 <SummaryCell label="Meta" value={goalLabel.replace(/^Meta:\s*/, "")} accent />
               </div>
 

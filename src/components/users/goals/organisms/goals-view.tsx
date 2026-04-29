@@ -60,7 +60,7 @@ export function GoalsView({
     <section className={cn("min-h-svh bg-white", className)}>
       <GoalsTopHeader userName={userName} onAvatarClick={onAvatarClick} />
 
-      <div className="mx-auto w-full max-w-md px-3 pb-44 pt-24 sm:px-4">
+      <div className="mx-auto w-full max-w-md px-3 pb-44 pt-16 sm:px-4 sm:pt-20">
         <div className="grid grid-cols-2 border-b border-slate-200/80">
           <button
             type="button"
@@ -97,7 +97,7 @@ export function GoalsView({
           </button>
         </div>
 
-        <div className="pt-4">
+        <div className="pt-3">
           {activeTab === "progreso" ? (
             <GoalsProgressSection
               currentWeightKg={resolvedCurrentWeightKg}
