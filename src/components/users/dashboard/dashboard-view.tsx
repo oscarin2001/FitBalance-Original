@@ -205,7 +205,7 @@ export function DashboardView({
               />
             </div>
           ) : (
-            <>
+            <div className="grid gap-4">
               <DashboardSummaryCard dashboard={dashboard} sessionUserId={sessionUserId} />
 
               <DailyLogView
@@ -221,7 +221,7 @@ export function DashboardView({
                 dayCompleted={dashboard.dayCompleted}
                 showHeader={false}
               />
-            </>
+            </div>
           )}
         </main>
 
