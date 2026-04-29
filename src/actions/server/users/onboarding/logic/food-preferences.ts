@@ -1,7 +1,7 @@
 import {
   createEmptyFoodPreferences,
   requiredFoodCategories,
-  resolveCanonicalFoodName,
+  normalizeFoodSelectionList,
 } from "../constants";
 import type { FoodPreferenceMap } from "../types";
 
@@ -21,11 +21,7 @@ export function normalizeSelectedFoods(raw: unknown): FoodPreferenceMap {
       return acc;
     }
 
-    acc[category] = selected
-      .filter((item): item is string => typeof item === "string" && item.trim().length > 0)
-      .map((item) => resolveCanonicalFoodName(category, item))
-      .filter((item): item is string => item !== null)
-      .slice(0, 10);
+    acc[category] = normalizeFoodSelectionList(category, selected);
 
     return acc;
   }, {});

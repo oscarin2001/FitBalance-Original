@@ -56,6 +56,29 @@ export function resolveCanonicalFoodName(category: FoodCategoryKey, value: strin
   return LEGACY_FOOD_ALIASES[category]?.[normalizedValue] ?? null;
 }
 
+export function normalizeFoodSelectionList(category: FoodCategoryKey, foods: unknown): string[] {
+  if (!Array.isArray(foods)) {
+    return [];
+  }
+
+  const seenFoods = new Set<string>();
+
+  return foods.reduce<string[]>((acc, item) => {
+    if (typeof item !== "string" || item.trim().length === 0) {
+      return acc;
+    }
+
+    const canonicalName = resolveCanonicalFoodName(category, item);
+    if (!canonicalName || seenFoods.has(canonicalName)) {
+      return acc;
+    }
+
+    seenFoods.add(canonicalName);
+    acc.push(canonicalName);
+    return acc;
+  }, []);
+}
+
 const fullOnboardingDays = [
   "Lunes",
   "Martes",

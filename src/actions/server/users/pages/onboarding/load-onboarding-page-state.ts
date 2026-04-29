@@ -4,7 +4,7 @@ import {
   createEmptyFoodsDraft,
   onboardingDays,
   requiredFoodCategories,
-  resolveCanonicalFoodName,
+  normalizeFoodSelectionList,
 } from "@/actions/server/users/onboarding/constants";
 import type {
   ActivityValue,
@@ -39,11 +39,7 @@ function normalizeFoodsDraft(preferenciasRaw: unknown, diasRaw: unknown): FoodsD
     (acc, category) => {
       const selectedValues = preferencias[category];
       if (Array.isArray(selectedValues)) {
-        acc[category] = selectedValues
-          .filter((item): item is string => typeof item === "string" && item.trim().length > 0)
-          .map((item) => resolveCanonicalFoodName(category, item))
-          .filter((item): item is string => item !== null)
-          .slice(0, 10);
+          acc[category] = normalizeFoodSelectionList(category, selectedValues);
       } else {
         acc[category] = defaults.preferencias[category] ?? [];
       }

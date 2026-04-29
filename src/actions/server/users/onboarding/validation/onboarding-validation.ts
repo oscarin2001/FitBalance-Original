@@ -78,7 +78,7 @@ export const trainingSchema = z.object({
 });
 
 export const foodSchema = z.object({
-  preferencias: z.record(z.string(), z.array(z.string()).max(10)),
+  preferencias: z.record(z.string(), z.array(z.string())),
   diasDieta: z.array(z.string()).min(1).max(7),
 }).superRefine((value, ctx) => {
   const missingCategories = getMissingFoodCategories(
